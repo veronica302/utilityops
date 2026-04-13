@@ -857,7 +857,7 @@ var SK='util_ops_v8';
 const TODAY=new Date();TODAY.setHours(0,0,0,0);
 const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
-let projects=[],corrections=[],nextId=9000,nextCorId=9500;
+let projects=[],corrections=[],nextId=9000,nextCorId=9500,_lastCorList=[];
 let mainTab='all',subTab='all',filterType='all',searchQ='',sortBy='cor_first';
 let statusFilters=new Set();
 let currentPage=1,pageSize=50,editId=null,detailId=null;
@@ -1012,8 +1012,8 @@ function buildCorItems(allCors, projResolved, projectId){
       var btnStyle='margin-top:8px;font-size:12px;padding:4px 12px;border-radius:var(--r);cursor:pointer;border:0.5px solid '+(c.status==='Resolved'?'var(--st)':'var(--border2)')+';background:'+(c.status==='Resolved'?'var(--sbg)':'transparent')+';color:'+(c.status==='Resolved'?'var(--st)':'var(--text2)');
       var safeNotes=encodeURIComponent(c.corNotes||'');
       var safeType=encodeURIComponent(c.corType||'');
-      html+='<div style="display:flex;gap:6px;margin-top:8px"><button style="'+btnStyle+'" onclick="resolveCorInPanel('+projectId+',\''+safeNotes+'\',\''+safeType+'\')">'+(c.status==='Resolved'?'✓ Resolved':'Mark as Resolved')+'</button>';
-      if(pinUnlocked)html+='<button style="font-size:12px;padding:4px 10px;border-radius:var(--r);cursor:pointer;border:0.5px solid var(--db);background:var(--dbg);color:var(--dt)" onclick="deleteCorInPanel('+projectId+',\''+safeNotes+'\',\''+safeType+'\')">🗑 Del</button>';
+      html+='<div style="display:flex;gap:6px;margin-top:8px"><button style="'+btnStyle+';box-shadow:inset 0 1px 0 rgba(255,255,255,0.15),0 1px 3px rgba(0,0,0,0.15);text-shadow:0 1px 1px rgba(0,0,0,0.2)" onclick="resolveCorInPanel('+projectId+',\''+safeNotes+'\',\''+safeType+'\')">'+(c.status==='Resolved'?'✓ Resolved':'Mark as Resolved')+'</button>';
+      if(pinUnlocked)html+='<button style="font-size:12px;padding:4px 12px;border-radius:var(--r);cursor:pointer;border:none;background:#dc2626;color:#fff;font-weight:600;box-shadow:0 1px 3px rgba(220,38,38,0.4),inset 0 1px 0 rgba(255,255,255,0.15)" onclick="deleteCorInPanel('+projectId+',\''+safeNotes+'\',\''+safeType+'\')">Delete</button>';
       html+='</div>';
     }
     html+='</div>';
@@ -1347,6 +1347,7 @@ const empty=document.getElementById('empty-state');
 const pgDiv=document.getElementById('pagination');
 const rcEl=document.getElementById('result-count');if(rcEl)rcEl.textContent=list.length+' project'+(list.length!==1?'s':'');
 if(mode==='corrections'){
+_lastCorList=list;
 thead.innerHTML='\x3cth>Account\x3c/th>\x3cth>Project ID\x3c/th>\x3cth>Type\x3c/th>\x3cth>Assignee\x3c/th>\x3cth>Correction Type\x3c/th>\x3cth>Due\x3c/th>\x3cth>Status\x3c/th>\x3cth>Details\x3c/th>\x3cth>Actions\x3c/th>';
 pgDiv.style.display='none';
 if(!list.length){tbody.innerHTML='';empty.style.display='block';updateMetrics();return;}
@@ -1984,19 +1985,27 @@ save();render();closeDetail();
 });
 }
 function deleteCor(id){
-showDeleteConfirm('this correction',()=>{
-id=parseInt(id);
-const origCorrections=[...corrections];
-corrections=corrections.filter(x=>parseInt(x.id)!==id);
-render();
-deleteCorrectionFromSupabase(id).then(()=>{
-  save();closeDetail();showToast('Correction deleted.');
-}).catch((e)=>{
-  console.error('Delete correction failed:',e);
-  corrections=origCorrections;render();
-  showToast('Delete failed — check Supabase permissions.');
-});
-});
+  // cl_ ids are project-embedded corrections (from corList), not standalone
+  if(String(id).startsWith('cl_')){
+    // Find the correction from the last rendered list
+    const c=_lastCorList&&_lastCorList.find(x=>String(x.id)===String(id));
+    if(!c){showToast('Correction not found.');return;}
+    deleteCorInPanel(c.linkedProjectId,encodeURIComponent(c.corNotes||''),encodeURIComponent(c.corType||''));
+    return;
+  }
+  showDeleteConfirm('this correction',()=>{
+    const numId=parseInt(id);
+    const origCorrections=[...corrections];
+    corrections=corrections.filter(x=>parseInt(x.id)!==numId);
+    render();
+    deleteCorrectionFromSupabase(numId).then(()=>{
+      save();closeDetail();showToast('Correction deleted.');
+    }).catch((e)=>{
+      console.error('Delete correction failed:',e);
+      corrections=origCorrections;render();
+      showToast('Delete failed — check Supabase permissions.');
+    });
+  });
 }
 let pendingDeleteFn=null;
 function showDeleteConfirm(name,onConfirm){
@@ -2196,9 +2205,9 @@ document.getElementById('note-input-area').style.display=canEdit?'block':'none';
 document.getElementById('detail-panel').style.display='flex';
 }
 function showCorDetail(id){
-id=parseInt(id)||id;
-const c=corrections.find(x=>x.id===id);if(!c)return;detailId=id;
-document.getElementById('detail-content').innerHTML='\x3cdiv class="dp-h">\x3cdiv>\x3ch2>'+c.name+'\x3c/h2>'+(c.pid?'\x3cdiv style="font-size:14px;color:var(--text2)">'+c.pid+'\x3c/div>':'')+'\x3c/div>\x3cbutton class="close-btn" onclick="closeDetail()">&#x2715;\x3c/button>\x3c/div>\x3cdiv style="display:flex;gap:6px">'+typeBadge(c.type,'')+' \x3cspan class="badge b-COR">Correction\x3c/span>\x3c/div>\x3chr class="d-divider">\x3cdiv style="display:grid;grid-template-columns:1fr 1fr;gap:12px">\x3cdiv>\x3cdiv class="dl">Assignee\x3c/div>\x3cdiv style="display:flex;align-items:center;gap:6px;margin-top:3px">\x3cspan class="avatar">'+initials(c.assignee)+'\x3c/span>\x3cspan class="dv">'+c.assignee+'\x3c/span>\x3c/div>\x3c/div>\x3cdiv>\x3cdiv class="dl">Due\x3c/div>\x3cdiv class="dv">'+fmtDate(c.corDue)+'\x3c/div>\x3c/div>\x3cdiv>\x3cdiv class="dl">Correction Type\x3c/div>\x3cdiv class="dv">'+c.corType+'\x3c/div>\x3c/div>\x3c/div>\x3cdiv class="cor-section">\x3cdiv class="dl">Details\x3c/div>\x3cdiv class="dv" style="font-size:12px;line-height:1.55;white-space:pre-wrap;margin-top:4px">'+(c.corNotes||'--')+'\x3c/div>\x3c/div>\x3cdiv style="display:flex;gap:8px">\x3cbutton class="btn-s" style="flex:1;font-size:13px" onclick="resolveCorrection('+c.id+');closeDetail()">'+(c.status==='Resolved'?'Reopen':'Mark Resolved')+'\x3c/button>'+(pinUnlocked?'\x3cbutton class="btn-c" style="font-size:13px" onclick="deleteCor('+c.id+')">Delete\x3c/button>':'')+'\x3c/div>';
+id=String(id).startsWith('cl_')?String(id):(parseInt(id)||id);
+const c=(String(id).startsWith('cl_')?(_lastCorList&&_lastCorList.find(x=>String(x.id)===String(id))):corrections.find(x=>x.id===id));if(!c)return;detailId=id;
+document.getElementById('detail-content').innerHTML='\x3cdiv class="dp-h">\x3cdiv>\x3ch2>'+c.name+'\x3c/h2>'+(c.pid?'\x3cdiv style="font-size:14px;color:var(--text2)">'+c.pid+'\x3c/div>':'')+'\x3c/div>\x3cbutton class="close-btn" onclick="closeDetail()">&#x2715;\x3c/button>\x3c/div>\x3cdiv style="display:flex;gap:6px">'+typeBadge(c.type,'')+' \x3cspan class="badge b-COR">Correction\x3c/span>\x3c/div>\x3chr class="d-divider">\x3cdiv style="display:grid;grid-template-columns:1fr 1fr;gap:12px">\x3cdiv>\x3cdiv class="dl">Assignee\x3c/div>\x3cdiv style="display:flex;align-items:center;gap:6px;margin-top:3px">\x3cspan class="avatar">'+initials(c.assignee)+'\x3c/span>\x3cspan class="dv">'+c.assignee+'\x3c/span>\x3c/div>\x3c/div>\x3cdiv>\x3cdiv class="dl">Due\x3c/div>\x3cdiv class="dv">'+fmtDate(c.corDue)+'\x3c/div>\x3c/div>\x3cdiv>\x3cdiv class="dl">Correction Type\x3c/div>\x3cdiv class="dv">'+c.corType+'\x3c/div>\x3c/div>\x3c/div>\x3cdiv class="cor-section">\x3cdiv class="dl">Details\x3c/div>\x3cdiv class="dv" style="font-size:12px;line-height:1.55;white-space:pre-wrap;margin-top:4px">'+(c.corNotes||'--')+'\x3c/div>\x3c/div>\x3cdiv style="display:flex;gap:8px">\x3cbutton class="btn-s" style="flex:1;font-size:13px;box-shadow:inset 0 2px 0 rgba(255,255,255,0.2),0 2px 4px rgba(0,0,0,0.2);text-shadow:0 1px 1px rgba(0,0,0,0.2)" onclick="resolveCorrection('+c.id+');closeDetail()">'+(c.status==='Resolved'?'Reopen':'Mark Resolved')+'\x3c/button>'+(pinUnlocked?'\x3cbutton style="font-size:13px;padding:8px 18px;border-radius:var(--r);cursor:pointer;border:none;background:#dc2626;color:#fff;font-weight:600;box-shadow:0 2px 4px rgba(220,38,38,0.4)" onclick="deleteCor('+c.id+')">Delete\x3c/button>':'')+'\x3c/div>';
 document.getElementById('note-input-area').style.display='none';
 document.getElementById('detail-panel').style.display='flex';
 }
