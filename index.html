@@ -580,6 +580,18 @@ tr.dr:hover td{background:var(--bg2);cursor:pointer}
     <div class="fr"><label>Rebate Amount ($)</label><input type="number" id="f-rebate-amount" step="0.01"></div>
     <input type="hidden" id="f-rebate-program">
     <div class="fr"><label>HP Enrollment Date (for days counter)</label><input type="date" id="f-rebate-hp-date"></div>
+    <div class="fr" style="flex-direction:column;gap:4px">
+      <label>Linked COC Project</label>
+      <div style="position:relative">
+        <input type="text" id="f-linked-coc-search" placeholder="Search by name or ComEd ID..." autocomplete="off"
+          oninput="searchLinkedCOC(this.value)" onfocus="searchLinkedCOC(this.value)"
+          onblur="setTimeout(()=>{const d=document.getElementById('coc-link-dropdown');if(d)d.style.display='none'},200)"
+          style="width:100%;box-sizing:border-box">
+        <div id="coc-link-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:300;background:var(--bg);border:0.5px solid var(--border2);border-radius:var(--r);box-shadow:0 4px 16px rgba(0,0,0,.12);max-height:200px;overflow-y:auto;margin-top:2px"></div>
+      </div>
+      <div id="f-linked-coc-display" style="display:none;margin-top:4px;padding:8px 10px;background:var(--bg2);border-radius:var(--r);border:0.5px solid var(--border);font-size:13px"></div>
+      <input type="hidden" id="f-linked-coc-id">
+    </div>
   </div>
 
   <div class="sec-lbl">Correction / ComEd Feedback</div>
@@ -1780,11 +1792,11 @@ if(!opts.includes(prev))sel.value=opts[0];
 }
 function toggleCorF(){document.getElementById('cor-fields').style.display=document.getElementById('f-has-cor').checked?'block':'none';}
 function clearModal(){
-['f-name','f-pid','f-address','f-received','f-deadline','f-notes','f-ubname','f-pm','f-ic-hp-link','f-ic-approved','f-coc-approved','f-hp-enrolled','f-hp-ic-link','f-rebate-amount','f-rebate-program','f-rebate-hp-date','f-cor-due','f-cor-received','f-cor-notes','f-linked-ic-id','f-linked-ic-search'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+['f-name','f-pid','f-address','f-received','f-deadline','f-notes','f-ubname','f-pm','f-ic-hp-link','f-ic-approved','f-coc-approved','f-hp-enrolled','f-hp-ic-link','f-rebate-amount','f-rebate-program','f-rebate-hp-date','f-cor-due','f-cor-received','f-cor-notes','f-linked-ic-id','f-linked-ic-search','f-linked-coc-id','f-linked-coc-search'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
 document.getElementById('f-type').value='IC';document.getElementById('f-subtype').value='SFA';
 document.getElementById('f-status').value='Not yet Submitted';document.getElementById('f-assignee').value='Althesa Ancheta';
 document.getElementById('f-cor-type').value='Missing Information';
-document.getElementById('f-has-cor').checked=false;toggleCorF();onTypeChange();if(typeof clearLinkedIC==='function')clearLinkedIC();
+document.getElementById('f-has-cor').checked=false;toggleCorF();onTypeChange();if(typeof clearLinkedIC==='function')clearLinkedIC();if(typeof clearLinkedCOC==='function')clearLinkedCOC();
 }
 function openAddModal(){editId=null;clearModal();document.getElementById('modal-title').textContent='Add New Project';document.getElementById('modal').style.display='flex';setTimeout(()=>document.getElementById('f-name').focus(),50);}
 function closeModal(){document.getElementById('modal').style.display='none';}
@@ -1828,6 +1840,16 @@ if(p.type==='COC'){
 document.getElementById('f-hp-enrolled').value=p.hpEnrolled||'';
 document.getElementById('f-hp-ic-link').value=p.hpIcLink||'';
 document.getElementById('f-rebate-amount').value=p.rebateAmount||'';
+if(p.type==='Rebate'){
+  clearLinkedCOC();
+  if(p.linkedCOCProjectId){
+    const linkedCOC=projects.find(x=>x.id===parseInt(p.linkedCOCProjectId));
+    if(linkedCOC)selectLinkedCOC(linkedCOC.id);
+  } else if(p.pid){
+    const suggested=projects.find(x=>x.type==='COC'&&x.pid&&x.pid===p.pid);
+    if(suggested)selectLinkedCOC(suggested.id);
+  }
+}
 document.getElementById('f-rebate-program').value=p.rebateProgram||'';
 document.getElementById('f-rebate-hp-date').value=p.hpEnrolled||'';
 const existingCorsEl=document.getElementById('f-existing-cors');
@@ -1933,6 +1955,34 @@ function clearLinkedIC(){
   document.getElementById('f-linked-ic-search').value='';
   document.getElementById('f-linked-ic-display').style.display='none';
 }
+function searchLinkedCOC(q){
+  const dd=document.getElementById('coc-link-dropdown');
+  if(!q||q.length<2){dd.style.display='none';return;}
+  const ql=q.toLowerCase();
+  const matches=projects.filter(p=>p.type==='COC'&&(
+    (p.name||'').toLowerCase().includes(ql)||(p.pid||'').toLowerCase().includes(ql)
+  )).slice(0,8);
+  if(!matches.length){dd.innerHTML='<div style="padding:10px 12px;font-size:13px;color:var(--text3)">No COC projects found</div>';dd.style.display='block';return;}
+  dd.innerHTML=matches.map(p=>`<div onclick="selectLinkedCOC(${p.id})" style="padding:8px 12px;cursor:pointer;font-size:13px;border-bottom:0.5px solid var(--border)" onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''">
+    <div style="font-weight:500">${p.name}</div>
+    <div style="font-size:11px;color:var(--text2)">${p.pid?'ComEd ID: '+p.pid+' · ':''}COC ${p.cocApprovedDate?'Approved: '+p.cocApprovedDate:'Status: '+p.status}</div>
+  </div>`).join('');
+  dd.style.display='block';
+}
+function selectLinkedCOC(id){
+  const p=projects.find(x=>x.id===id);if(!p)return;
+  document.getElementById('f-linked-coc-id').value=id;
+  document.getElementById('f-linked-coc-search').value=p.name+(p.pid?' ('+p.pid+')':'');
+  document.getElementById('coc-link-dropdown').style.display='none';
+  const disp=document.getElementById('f-linked-coc-display');
+  disp.innerHTML='🔗 <strong>'+p.name+'</strong>'+(p.pid?' · ComEd ID: '+p.pid:'')+(p.cocApprovedDate?'<span style="margin-left:8px;color:var(--st);font-size:12px">✓ COC Approved: '+p.cocApprovedDate+'</span>':'<span style="margin-left:8px;color:var(--text3);font-size:12px">Status: '+p.status+'</span>')+'<button onclick="clearLinkedCOC()" style="margin-left:8px;font-size:11px;padding:1px 6px;border-radius:4px;border:0.5px solid var(--border2);background:transparent;cursor:pointer;color:var(--text2)">✕ Remove</button>';
+  disp.style.display='block';
+}
+function clearLinkedCOC(){
+  document.getElementById('f-linked-coc-id').value='';
+  document.getElementById('f-linked-coc-search').value='';
+  document.getElementById('f-linked-coc-display').style.display='none';
+}
 function saveProject(){
 const name=document.getElementById('f-name').value.trim();
 const pid=document.getElementById('f-pid').value.trim();
@@ -1987,7 +2037,7 @@ created:new Date().toISOString().slice(0,10)
 if(isResolved)corList=corList.map(c=>({...c,status:'Resolved'}));
 const hasCor=!isResolved&&corList.some(c=>c.status!=='Resolved');
 const latestCor=corList.filter(c=>c.status!=='Resolved').slice(-1)[0]||corList.slice(-1)[0]||{};
-const p={id:editId||nextId++,name,pid:document.getElementById('f-pid').value.trim(),address:document.getElementById('f-address').value.trim(),type:t,subtype:document.getElementById('f-subtype').value,status,assignee:document.getElementById('f-assignee').value,received:document.getElementById('f-received').value,deadline:document.getElementById('f-deadline').value,notes:document.getElementById('f-notes').value.trim(),ubName:document.getElementById('f-ubname').value.trim(),pmName:document.getElementById('f-pm').value.trim(),hasCor,corList,corType:latestCor.corType||'',corReceived:latestCor.corReceived||'',corDue:latestCor.corDue||'',corNotes:latestCor.corNotes||'',icHpLink:'',icApprovedDate:document.getElementById('f-ic-approved').value,cocApprovedDate:document.getElementById('f-coc-approved').value,linkedICProjectId:document.getElementById('f-linked-ic-id').value?parseInt(document.getElementById('f-linked-ic-id').value)||document.getElementById('f-linked-ic-id').value:'',hpEnrolled:hpDate,hpIcLink:'',hpRebateLink:'',rebateHpLink:'',rebateAmount:document.getElementById('f-rebate-amount').value,rebateProgram:document.getElementById('f-rebate-program').value.trim(),activityLog:existing?existing.activityLog||[]:[],created:existing?existing.created:new Date().toISOString().slice(0,10),updated:new Date().toISOString().slice(0,10),lastEditedBy:myViewerName||'Unknown',lastEditedAt:new Date().toISOString()};
+const p={id:editId||nextId++,name,pid:document.getElementById('f-pid').value.trim(),address:document.getElementById('f-address').value.trim(),type:t,subtype:document.getElementById('f-subtype').value,status,assignee:document.getElementById('f-assignee').value,received:document.getElementById('f-received').value,deadline:document.getElementById('f-deadline').value,notes:document.getElementById('f-notes').value.trim(),ubName:document.getElementById('f-ubname').value.trim(),pmName:document.getElementById('f-pm').value.trim(),hasCor,corList,corType:latestCor.corType||'',corReceived:latestCor.corReceived||'',corDue:latestCor.corDue||'',corNotes:latestCor.corNotes||'',icHpLink:'',icApprovedDate:document.getElementById('f-ic-approved').value,cocApprovedDate:document.getElementById('f-coc-approved').value,linkedICProjectId:document.getElementById('f-linked-ic-id').value?parseInt(document.getElementById('f-linked-ic-id').value)||document.getElementById('f-linked-ic-id').value:'',linkedCOCProjectId:document.getElementById('f-linked-coc-id').value?parseInt(document.getElementById('f-linked-coc-id').value)||document.getElementById('f-linked-coc-id').value:'',hpEnrolled:hpDate,hpIcLink:'',hpRebateLink:'',rebateHpLink:'',rebateAmount:document.getElementById('f-rebate-amount').value,rebateProgram:document.getElementById('f-rebate-program').value.trim(),activityLog:existing?existing.activityLog||[]:[],created:existing?existing.created:new Date().toISOString().slice(0,10),updated:new Date().toISOString().slice(0,10),lastEditedBy:myViewerName||'Unknown',lastEditedAt:new Date().toISOString()};
 if(editId){const i=projects.findIndex(x=>x.id===editId);if(i>-1)projects[i]=p;}
 else projects.push(p);
 saveProjectToSupabase(p).catch(()=>{});
@@ -2220,7 +2270,9 @@ const pill=days!==null?'\x3cspan class="days-pill'+(days>90?' long':days>60?' me
 hpSec='\x3cdiv class="hp-section">\x3cdiv class="dl">HP Enrollment\x3c/div>\x3cdiv class="dv" style="margin-top:4px">Date: \x3cstrong>'+fmtDate(p.hpEnrolled)+'\x3c/strong>\x3c/div>\x3cdiv class="dv" style="margin-top:5px">Days since enrollment: '+pill+'\x3c/div>'+(p.hpIcLink?'\x3cdiv class="dv" style="font-size:12px;margin-top:4px">Linked IC: \x3cstrong>'+p.hpIcLink+'\x3c/strong>\x3c/div>':'')+'\x3c/div>';
 }
 if(p.rebateAmount){
-rebSec='\x3cdiv class="rebate-section">\x3cdiv class="dl">Rebate\x3c/div>\x3cdiv class="dv" style="font-size:20px;font-weight:600;margin-top:4px">'+fmtMoney(p.rebateAmount)+'\x3c/div>'+(p.rebateProgram?'\x3cdiv class="dv" style="font-size:12px;margin-top:3px">'+p.rebateProgram+'\x3c/div>':'')+'\x3c/div>';
+const linkedCOC=p.linkedCOCProjectId?projects.find(x=>x.id===parseInt(p.linkedCOCProjectId)):null;
+  const cocBadgeReb=linkedCOC?'\x3cdiv style="margin-top:8px;padding:8px 10px;background:var(--bg2);border-radius:var(--r);border:0.5px solid var(--border);cursor:pointer" onclick="showDetail('+linkedCOC.id+')">\x3cdiv style="font-size:11px;color:var(--text2);margin-bottom:3px">🔗 LINKED COC PROJECT\x3c/div>\x3cdiv style="font-size:13px;font-weight:500">'+linkedCOC.name+'\x3c/div>\x3cdiv style="font-size:12px;color:var(--text2);margin-top:2px">'+(linkedCOC.pid?'ComEd ID: '+linkedCOC.pid+' · ':'')+(linkedCOC.cocApprovedDate?'\x3cspan style="color:var(--st)">✓ COC Approved: '+fmtDate(linkedCOC.cocApprovedDate)+'\x3c/span>':'Status: '+linkedCOC.status)+'\x3c/div>\x3c/div>':'\x3cdiv style="margin-top:6px;font-size:12px;color:var(--text3)">No COC project linked — edit to add one\x3c/div>';
+  rebSec='\x3cdiv class="rebate-section">\x3cdiv class="dl">Rebate\x3c/div>\x3cdiv class="dv" style="font-size:20px;font-weight:600;margin-top:4px">'+fmtMoney(p.rebateAmount)+'\x3c/div>'+(p.rebateProgram?'\x3cdiv class="dv" style="font-size:12px;margin-top:3px">'+p.rebateProgram+'\x3c/div>':'')+'\x3c/div>'+cocBadgeReb;
 }
 if(p.type==='IC'){
   const linkedCOCs=projects.filter(x=>x.type==='COC'&&parseInt(x.linkedICProjectId)===p.id);
@@ -2230,7 +2282,9 @@ if(p.type==='IC'){
 if(p.type==='COC'){
   const linkedIC=p.linkedICProjectId?projects.find(x=>x.id===parseInt(p.linkedICProjectId)):null;
   const icBadge=linkedIC?'\x3cdiv style="margin-top:8px;padding:8px 10px;background:var(--bg2);border-radius:var(--r);border:0.5px solid var(--border);cursor:pointer" onclick="showDetail('+linkedIC.id+')">\x3cdiv style="font-size:11px;color:var(--text2);margin-bottom:3px">🔗 LINKED IC PROJECT\x3c/div>\x3cdiv style="font-size:13px;font-weight:500">'+linkedIC.name+'\x3c/div>\x3cdiv style="font-size:12px;color:var(--text2);margin-top:2px">'+(linkedIC.pid?'ComEd ID: '+linkedIC.pid+' · ':'')+(linkedIC.icApprovedDate?'\x3cspan style="color:var(--st)">✓ IC Approved: '+fmtDate(linkedIC.icApprovedDate)+'\x3c/span>':'Status: '+linkedIC.status)+'\x3c/div>\x3c/div>':'\x3cdiv style="margin-top:8px;font-size:12px;color:var(--text3)">No IC project linked — edit to add one\x3c/div>';
-  cocSec='\x3cdiv style="display:grid;grid-template-columns:1fr 1fr;gap:10px">\x3cdiv>\x3cdiv class="dl">Submitted\x3c/div>\x3cdiv class="dv">'+fmtDate(p.received)+'\x3c/div>\x3c/div>\x3cdiv>\x3cdiv class="dl">COC Approved\x3c/div>\x3cdiv class="dv">'+(fmtDate(p.cocApprovedDate)||'\x3cspan style="color:var(--text3)">Pending\x3c/span>')+'\x3c/div>\x3c/div>\x3c/div>'+icBadge;
+  const linkedRebates=projects.filter(x=>x.type==='Rebate'&&parseInt(x.linkedCOCProjectId)===p.id);
+  const rebateBadges=linkedRebates.length?linkedRebates.map(reb=>'\x3cdiv style="margin-top:6px;padding:8px 10px;background:var(--bg2);border-radius:var(--r);border:0.5px solid var(--border);cursor:pointer" onclick="showDetail('+reb.id+')">\x3cdiv style="font-size:11px;color:var(--text2);margin-bottom:3px">🔗 LINKED REBATE PROJECT\x3c/div>\x3cdiv style="font-size:13px;font-weight:500">'+reb.name+'\x3c/div>\x3cdiv style="font-size:12px;color:var(--text2);margin-top:2px">'+(reb.pid?'ComEd ID: '+reb.pid+' · ':'')+'Status: '+reb.status+'\x3c/div>\x3c/div>').join(''):'';
+  cocSec='\x3cdiv style="display:grid;grid-template-columns:1fr 1fr;gap:10px">\x3cdiv>\x3cdiv class="dl">Submitted\x3c/div>\x3cdiv class="dv">'+fmtDate(p.received)+'\x3c/div>\x3c/div>\x3cdiv>\x3cdiv class="dl">COC Approved\x3c/div>\x3cdiv class="dv">'+(fmtDate(p.cocApprovedDate)||'\x3cspan style="color:var(--text3)">Pending\x3c/span>')+'\x3c/div>\x3c/div>\x3c/div>'+icBadge+rebateBadges;
 }
 let allCors=[];
 if(p.corList&&p.corList.length){
