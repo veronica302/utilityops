@@ -692,6 +692,8 @@ tr.dr:hover td{background:var(--bg2);cursor:pointer}
 
 
 
+
+
 const SUPABASE_URL = 'https://qdonrprtccrprqxefomv.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFkb25ycHJ0Y2NycHJxeGVmb212Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwODU0NjgsImV4cCI6MjA5MTY2MTQ2OH0.NWZkYz7q5_JTA_UvUwhWEEEwCTTMPCPHnuio9Q2nv4s';
 
@@ -1043,27 +1045,33 @@ async function cleanupDuplicateCorrections(){
 
 function deleteCorInPanel(projectId,i){
   projectId=parseInt(projectId)||projectId;
-  var mk=projectId+'_'+i;
+  var mk=String(projectId)+'_'+i;
   var mp=window._corMap&&window._corMap[mk];
   var p=projects.find(function(x){return x.id===projectId;});
-  if(!p||!p.corList){showToast('Project not found.');return;}
+  if(!p){showToast('Project not found.');return;}
+  if(!mp&&(!p.corList||!p.corList[i])){showToast('Correction not found.');return;}
+  var targetNotes=mp?mp.n:(p.corList[i]?p.corList[i].corNotes||'':'');
+  var targetType=mp?mp.t:(p.corList[i]?p.corList[i].corType||'':'');
   showDeleteConfirm('this correction',function(){
-    var ci=mp?p.corList.findIndex(function(c){return (c.corNotes||'')===mp.n&&(c.corType||'')===mp.t;}):i;
-    if(ci===-1||!p.corList[ci]){showToast('Correction not found.');return;}
-    var removed=p.corList.splice(ci,1)[0];
+    if(!p.corList)p.corList=[];
+    // Remove ALL matching from corList (handles duplicates too)
+    p.corList=p.corList.filter(function(c){
+      return !((c.corNotes||'').trim()===(targetNotes).trim()&&(c.corType||'')===targetType);
+    });
     if(p.corList.length===0)p.hasCor=false;
     p.lastEditedBy=myViewerName||'Unknown';
     p.lastEditedAt=new Date().toISOString();
+    // Remove from standalone corrections
     corrections=corrections.filter(function(c){
       var match=parseInt(c.linkedProjectId)===projectId
-        &&(c.corNotes||'').trim()===(removed.corNotes||'').trim()
-        &&(c.corType||'')===(removed.corType||'');
+        &&(c.corNotes||'').trim()===(targetNotes).trim()
+        &&(c.corType||'')===targetType;
       if(match)deleteCorrectionFromSupabase(c.id).catch(function(){});
       return !match;
     });
     saveProjectToSupabase(p).then(function(){
       save();showDetail(projectId);render();showToast('Correction deleted.');
-    }).catch(function(){showToast('Error. Try again.');});
+    }).catch(function(){showToast('Error saving. Try again.');});
   });
 }
 function load(){
@@ -2382,6 +2390,8 @@ downloadXLS(buildXLSX(sheets),'monthly_report_'+from+'_to_'+to+'.xls');
 showToast('Exported successfully!');
 }
 load();updateStatusDropdown();render();applyEditMode();
+
+
 
 
 
