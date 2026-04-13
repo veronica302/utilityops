@@ -1073,7 +1073,7 @@ function deleteCorInPanel(projectId,encodedNotes,encodedType){
       return !((c.corNotes||'').trim()===(targetNotes).trim()&&(c.corType||'')===targetType);
     });
     console.log('Removed '+(before-p.corList.length)+' from corList, '+p.corList.length+' remain');
-    if(p.corList.length===0)p.hasCor=false;
+    if(p.corList.length===0){p.hasCor=false;p.corType='';p.corNotes='';p.corDue='';}
     p.lastEditedBy=myViewerName||'Unknown';
     p.lastEditedAt=new Date().toISOString();
     // Remove matching standalone corrections and delete from Supabase
