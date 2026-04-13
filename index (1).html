@@ -552,6 +552,18 @@ tr.dr:hover td{background:var(--bg2);cursor:pointer}
   <div id="coc-fields" style="display:none">
     <div class="sec-lbl">COC Details</div>
     <input type="hidden" id="f-coc-approved">
+    <div class="fr" style="flex-direction:column;gap:4px">
+      <label>Linked IC Project</label>
+      <div style="position:relative">
+        <input type="text" id="f-linked-ic-search" placeholder="Search by name or ComEd ID..." autocomplete="off"
+          oninput="searchLinkedIC(this.value)" onfocus="searchLinkedIC(this.value)"
+          onblur="setTimeout(()=>{const d=document.getElementById('ic-link-dropdown');if(d)d.style.display='none'},200)"
+          style="width:100%;box-sizing:border-box">
+        <div id="ic-link-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:300;background:var(--bg);border:0.5px solid var(--border2);border-radius:var(--r);box-shadow:0 4px 16px rgba(0,0,0,.12);max-height:200px;overflow-y:auto;margin-top:2px"></div>
+      </div>
+      <div id="f-linked-ic-display" style="display:none;margin-top:4px;padding:8px 10px;background:var(--bg2);border-radius:var(--r);border:0.5px solid var(--border);font-size:13px"></div>
+      <input type="hidden" id="f-linked-ic-id">
+    </div>
   </div>
 
   <div id="hp-fields" style="display:none">
@@ -697,6 +709,8 @@ tr.dr:hover td{background:var(--bg2);cursor:pointer}
 
 
 
+
+
 const SUPABASE_URL = 'https://qdonrprtccrprqxefomv.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFkb25ycHJ0Y2NycHJxeGVmb212Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwODU0NjgsImV4cCI6MjA5MTY2MTQ2OH0.NWZkYz7q5_JTA_UvUwhWEEEwCTTMPCPHnuio9Q2nv4s';
 
@@ -739,8 +753,8 @@ async function loadFromSupabase() {
     if (sRows) {
       const nextIdRow = sRows.find(r => r.key === 'nextId');
       const nextCorIdRow = sRows.find(r => r.key === 'nextCorId');
-      if (nextIdRow) nextId = nextIdRow.value;
-      if (nextCorIdRow) nextCorId = nextCorIdRow.value;
+      if (nextIdRow) nextId = parseInt(nextIdRow.value);
+      if (nextCorIdRow) nextCorId = parseInt(nextCorIdRow.value);
     }
     showToast('Data loaded - ' + projects.length + ' projects');
     await cleanupDuplicateCorrections();
@@ -769,11 +783,13 @@ async function saveAllProjectsToSupabase() {
 
 async function saveProjectToSupabase(p) {
   window._lastSaveTime = Date.now();
-  await sbFetch('/rest/v1/projects', {
+  const result = await sbFetch('/rest/v1/projects', {
     method: 'POST',
     prefer: 'resolution=merge-duplicates',
     body: JSON.stringify({id: p.id, data: p})
   });
+  console.log('Saved project '+p.id+' to Supabase, corList length: '+(p.corList?p.corList.length:0));
+  return result;
 }
 
 async function saveCorrectionToSupabase(c) {
@@ -853,7 +869,7 @@ var SK='util_ops_v8';
 const TODAY=new Date();TODAY.setHours(0,0,0,0);
 const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
-let projects=[],corrections=[],nextId=9000,nextCorId=9500;
+let projects=[],corrections=[],nextId=9000,nextCorId=9500,_lastCorList=[];
 let mainTab='all',subTab='all',filterType='all',searchQ='',sortBy='cor_first';
 let statusFilters=new Set();
 let currentPage=1,pageSize=50,editId=null,detailId=null;
@@ -1005,11 +1021,11 @@ function buildCorItems(allCors, projResolved, projectId){
     html+='</div>';
     if(c.corNotes)html+='<div style="font-size:12px;line-height:1.6;white-space:pre-wrap;padding:8px;background:var(--bg);border-radius:var(--r);border:0.5px solid var(--db)">'+c.corNotes+'</div>';
     if(canEdit&&!projResolved){
-      var btnStyle='margin-top:8px;font-size:12px;padding:4px 12px;border-radius:var(--r);cursor:pointer;border:0.5px solid '+(c.status==='Resolved'?'var(--st)':'var(--border2)')+';background:'+(c.status==='Resolved'?'var(--sbg)':'transparent')+';color:'+(c.status==='Resolved'?'var(--st)':'var(--text2)');
+      var btnStyle='margin-top:8px;font-size:12px;padding:4px 12px;border-radius:var(--r);cursor:pointer;border:none;background:'+(c.status==='Resolved'?'var(--sbg)':'#16a34a')+';color:'+(c.status==='Resolved'?'var(--st)':'#fff')+';font-weight:600;box-shadow:0 2px 4px rgba(22,163,74,0.35),inset 0 1px 0 rgba(255,255,255,0.2)';
       var safeNotes=encodeURIComponent(c.corNotes||'');
       var safeType=encodeURIComponent(c.corType||'');
-      html+='<div style="display:flex;gap:6px;margin-top:8px"><button style="'+btnStyle+'" onclick="resolveCorInPanel('+projectId+',\''+safeNotes+'\',\''+safeType+'\')">'+(c.status==='Resolved'?'✓ Resolved':'Mark as Resolved')+'</button>';
-      if(pinUnlocked)html+='<button style="font-size:12px;padding:4px 10px;border-radius:var(--r);cursor:pointer;border:0.5px solid var(--db);background:var(--dbg);color:var(--dt)" onclick="deleteCorInPanel('+projectId+',\''+safeNotes+'\',\''+safeType+'\')">🗑 Del</button>';
+      html+='<div style="display:flex;gap:6px;margin-top:8px"><button style="'+btnStyle+';box-shadow:inset 0 1px 0 rgba(255,255,255,0.15),0 1px 3px rgba(0,0,0,0.15);text-shadow:0 1px 1px rgba(0,0,0,0.2)" onclick="resolveCorInPanel('+projectId+',\''+safeNotes+'\',\''+safeType+'\')">'+(c.status==='Resolved'?'✓ Resolved':'Mark as Resolved')+'</button>';
+      if(pinUnlocked)html+='<button style="font-size:12px;padding:4px 12px;border-radius:var(--r);cursor:pointer;border:none;background:#dc2626;color:#fff;font-weight:600;box-shadow:0 1px 3px rgba(220,38,38,0.4),inset 0 1px 0 rgba(255,255,255,0.15)" onclick="deleteCorInPanel('+projectId+',\''+safeNotes+'\',\''+safeType+'\')">Delete</button>';
       html+='</div>';
     }
     html+='</div>';
@@ -1061,25 +1077,36 @@ function deleteCorInPanel(projectId,encodedNotes,encodedType){
   var p=projects.find(function(x){return x.id===projectId;});
   if(!p){showToast('Project not found.');return;}
   showDeleteConfirm('this correction',function(){
+    window._lastSaveTime=Date.now()+30000; // block poll for 30s
     if(!p.corList)p.corList=[];
-    // Remove ALL matching from corList (handles duplicates too)
+    // Remove from corList
+    var before=p.corList.length;
     p.corList=p.corList.filter(function(c){
       return !((c.corNotes||'').trim()===(targetNotes).trim()&&(c.corType||'')===targetType);
     });
-    if(p.corList.length===0)p.hasCor=false;
+    console.log('Removed '+(before-p.corList.length)+' from corList, '+p.corList.length+' remain');
+    if(p.corList.length===0){p.hasCor=false;p.corType='';p.corNotes='';p.corDue='';}
     p.lastEditedBy=myViewerName||'Unknown';
     p.lastEditedAt=new Date().toISOString();
-    // Remove from standalone corrections
+    // Remove matching standalone corrections and delete from Supabase
     corrections=corrections.filter(function(c){
       var match=parseInt(c.linkedProjectId)===projectId
         &&(c.corNotes||'').trim()===(targetNotes).trim()
         &&(c.corType||'')===targetType;
-      if(match)deleteCorrectionFromSupabase(c.id).catch(function(){});
+      if(match&&c.id) sbFetch('/rest/v1/corrections?id=eq.'+c.id,{method:'DELETE'}).catch(function(){});
       return !match;
     });
+    // Save the project (with corList already modified)
     saveProjectToSupabase(p).then(function(){
-      save();showDetail(projectId);render();showToast('Correction deleted.');
-    }).catch(function(){showToast('Error saving. Try again.');});
+      console.log('Project saved successfully');
+      save();
+      showDetail(projectId);
+      render();
+      showToast('Correction deleted.');
+    }).catch(function(e){
+      console.error('Save failed:',e);
+      showToast('Save failed - please try again.');
+    });
   });
 }
 function load(){
@@ -1332,11 +1359,12 @@ const empty=document.getElementById('empty-state');
 const pgDiv=document.getElementById('pagination');
 const rcEl=document.getElementById('result-count');if(rcEl)rcEl.textContent=list.length+' project'+(list.length!==1?'s':'');
 if(mode==='corrections'){
+_lastCorList=list;
 thead.innerHTML='\x3cth>Account\x3c/th>\x3cth>Project ID\x3c/th>\x3cth>Type\x3c/th>\x3cth>Assignee\x3c/th>\x3cth>Correction Type\x3c/th>\x3cth>Due\x3c/th>\x3cth>Status\x3c/th>\x3cth>Details\x3c/th>\x3cth>Actions\x3c/th>';
 pgDiv.style.display='none';
 if(!list.length){tbody.innerHTML='';empty.style.display='block';updateMetrics();return;}
 empty.style.display='none';
-tbody.innerHTML=list.map(c=>(canEdit?'\x3ctr class="dr" onclick="showCorDetail('+c.id+')" style="cursor:pointer">':'\x3ctr class="dr" style="cursor:default">')+'\x3ctd>\x3cdiv style="font-weight:500">'+c.name+'\x3c/div>'+(c.pid?'\x3cdiv style="font-size:13px;color:var(--text2)">'+c.pid+'\x3c/div>':'')+'\x3c/td>\x3ctd>'+typeBadge(c.type,'')+'\x3c/td>\x3ctd>\x3cdiv style="display:flex;align-items:center;gap:6px">\x3cspan class="avatar">'+initials(c.assignee)+'\x3c/span>\x3cspan style="font-size:14px">'+(c.assignee||'--')+'\x3c/span>\x3c/div>\x3c/td>\x3ctd>\x3cspan class="badge b-COR">'+c.corType+'\x3c/span>\x3c/td>\x3ctd style="font-size:14px">'+fmtDate(c.corDue)+'\x3c/td>\x3ctd>'+statusBadge(c.status)+'\x3c/td>\x3ctd style="font-size:11px;color:var(--text2);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+((c.corNotes||'').slice(0,55))+'\x3c/td>\x3ctd onclick="event.stopPropagation()">\x3cdiv class="action-row">'+(canEdit?'\x3cbutton class="act-btn" onclick="resolveCorrection('+c.id+')">'+(c.status==='Resolved'?'Reopen':'Resolve')+'\x3c/button>':'')+''+(canEdit&&pinUnlocked?'\x3cbutton class="act-btn del" onclick="deleteCor('+c.id+')">Del\x3c/button>':'')+'\x3c/div>\x3c/td>\x3c/tr>').join('');
+tbody.innerHTML=list.map(c=>(canEdit?'\x3ctr class="dr" onclick="showCorDetail('+c.id+')" style="cursor:pointer">':'\x3ctr class="dr" style="cursor:default">')+'\x3ctd>\x3cdiv style="font-weight:500">'+c.name+'\x3c/div>'+(c.pid?'\x3cdiv style="font-size:13px;color:var(--text2)">'+c.pid+'\x3c/div>':'')+'\x3c/td>\x3ctd>'+typeBadge(c.type,'')+'\x3c/td>\x3ctd>\x3cdiv style="display:flex;align-items:center;gap:6px">\x3cspan class="avatar">'+initials(c.assignee)+'\x3c/span>\x3cspan style="font-size:14px">'+(c.assignee||'--')+'\x3c/span>\x3c/div>\x3c/td>\x3ctd>\x3cspan class="badge b-COR">'+c.corType+'\x3c/span>\x3c/td>\x3ctd style="font-size:14px">'+fmtDate(c.corDue)+'\x3c/td>\x3ctd>'+statusBadge(c.status)+'\x3c/td>\x3ctd style="font-size:11px;color:var(--text2);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+((c.corNotes||'').slice(0,55))+'\x3c/td>\x3ctd onclick="event.stopPropagation()">\x3cdiv class="action-row">'+(canEdit?'\x3cbutton style="font-size:12px;padding:4px 10px;border-radius:var(--r);cursor:pointer;border:none;background:#16a34a;color:#fff;font-weight:600;box-shadow:0 2px 4px rgba(22,163,74,0.4),inset 0 1px 0 rgba(255,255,255,0.2)" onclick="resolveCorrection('+c.id+')">'+(c.status==='Resolved'?'Reopen':'Resolve')+'\x3c/button>':'')+''+(canEdit&&pinUnlocked?'\x3cbutton style="font-size:12px;padding:4px 10px;border-radius:var(--r);cursor:pointer;border:none;background:#dc2626;color:#fff;font-weight:600;box-shadow:0 2px 4px rgba(220,38,38,0.4),inset 0 1px 0 rgba(255,255,255,0.2)" onclick="deleteCor('+c.id+')">Delete\x3c/button>':'')+'\x3c/div>\x3c/td>\x3c/tr>').join('');
 updateMetrics();renderAlerts();return;
 }
 const isRebate=mainTab==='Rebate',isHP=mainTab==='HP',isIC=mainTab==='IC',isCOC=mainTab==='COC',isAll=mainTab==='all';
@@ -1377,7 +1405,7 @@ if(isIC)extra+='\x3ctd style="font-size:14px">'+fmtDate(p.icApprovedDate)+'\x3c/
 if(isCOC)extra+='\x3ctd style="font-size:14px">'+fmtDate(p.cocApprovedDate)+'\x3c/td>';
 if(showDays)extra+='\x3ctd style="font-size:14px">'+(p.hpEnrolled?fmtDate(p.hpEnrolled):'\x3cspan style="color:var(--text3)">--\x3c/span>')+'\x3c/td>\x3ctd>'+pill+'\x3c/td>';
 if(isRebate||isAll)extra+='\x3ctd style="font-weight:500;white-space:nowrap">'+fmtMoney(p.rebateAmount)+'\x3c/td>';
-return'\x3ctr class="dr" onclick="showDetail('+p.id+')" style="cursor:pointer">'+'\x3ctd>\x3cdiv style="font-weight:500">'+p.name+'\x3c/div>'+(p.ubName?'\x3cdiv style="font-size:13px;color:var(--text2);margin-top:1px">'+p.ubName+'\x3c/div>':'')+'\x3c/td>\x3ctd style="font-size:14px;color:var(--text2)">'+(p.pid||'--')+'\x3c/td>'+extra+'\x3ctd>'+statusBadge(p.status)+'\x3c/td>\x3ctd>'+corCell+'\x3c/td>\x3ctd>'+(noteCount?'\x3cspan style="background:var(--ibg);color:var(--it);padding:3px 10px;border-radius:20px;font-size:13px">'+noteCount+' note'+(noteCount!==1?'s':'')+'\x3c/span>':'\x3cspan style="color:var(--text3)">--\x3c/span>')+'\x3c/td>\x3ctd onclick="event.stopPropagation()">\x3cdiv class="action-row">'+(canEdit?'\x3cbutton class="act-btn" onclick="editProject('+p.id+')">Edit\x3c/button>':'')+(canEdit&&pinUnlocked?'\x3cbutton class="act-btn del" onclick="deleteProject('+p.id+')">Del\x3c/button>':'')+'\x3c/div>\x3c/td>\x3c/tr>';
+return'\x3ctr class="dr" onclick="showDetail('+p.id+')" style="cursor:pointer">'+'\x3ctd>\x3cdiv style="font-weight:500">'+p.name+'\x3c/div>'+(p.ubName?'\x3cdiv style="font-size:13px;color:var(--text2);margin-top:1px">'+p.ubName+'\x3c/div>':'')+'\x3c/td>\x3ctd style="font-size:14px;color:var(--text2)">'+(p.pid||'--')+'\x3c/td>'+extra+'\x3ctd>'+statusBadge(p.status)+'\x3c/td>\x3ctd>'+corCell+'\x3c/td>\x3ctd>'+(noteCount?'\x3cspan style="background:var(--ibg);color:var(--it);padding:3px 10px;border-radius:20px;font-size:13px">'+noteCount+' note'+(noteCount!==1?'s':'')+'\x3c/span>':'\x3cspan style="color:var(--text3)">--\x3c/span>')+'\x3c/td>\x3ctd onclick="event.stopPropagation()">\x3cdiv class="action-row">'+(canEdit?'\x3cbutton class="act-btn" onclick="editProject('+p.id+')">Edit\x3c/button>':'')+(canEdit&&pinUnlocked?'\x3cbutton class="act-btn del" onclick="deleteProject('+p.id+')">Delete\x3c/button>':'')+'\x3c/div>\x3c/td>\x3c/tr>';
 }).join('');
 }
 if(totalPages<=1){pgDiv.style.display='none';}
@@ -1752,11 +1780,11 @@ if(!opts.includes(prev))sel.value=opts[0];
 }
 function toggleCorF(){document.getElementById('cor-fields').style.display=document.getElementById('f-has-cor').checked?'block':'none';}
 function clearModal(){
-['f-name','f-pid','f-address','f-received','f-deadline','f-notes','f-ubname','f-pm','f-ic-hp-link','f-ic-approved','f-coc-approved','f-hp-enrolled','f-hp-ic-link','f-rebate-amount','f-rebate-program','f-rebate-hp-date','f-cor-due','f-cor-received','f-cor-notes'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+['f-name','f-pid','f-address','f-received','f-deadline','f-notes','f-ubname','f-pm','f-ic-hp-link','f-ic-approved','f-coc-approved','f-hp-enrolled','f-hp-ic-link','f-rebate-amount','f-rebate-program','f-rebate-hp-date','f-cor-due','f-cor-received','f-cor-notes','f-linked-ic-id','f-linked-ic-search'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
 document.getElementById('f-type').value='IC';document.getElementById('f-subtype').value='SFA';
 document.getElementById('f-status').value='Not yet Submitted';document.getElementById('f-assignee').value='Althesa Ancheta';
 document.getElementById('f-cor-type').value='Missing Information';
-document.getElementById('f-has-cor').checked=false;toggleCorF();onTypeChange();
+document.getElementById('f-has-cor').checked=false;toggleCorF();onTypeChange();if(typeof clearLinkedIC==='function')clearLinkedIC();
 }
 function openAddModal(){editId=null;clearModal();document.getElementById('modal-title').textContent='Add New Project';document.getElementById('modal').style.display='flex';setTimeout(()=>document.getElementById('f-name').focus(),50);}
 function closeModal(){document.getElementById('modal').style.display='none';}
@@ -1786,6 +1814,17 @@ document.getElementById('f-pm').value=p.pmName||'';
 document.getElementById('f-ic-hp-link').value=p.icHpLink||'';
 document.getElementById('f-ic-approved').value=p.icApprovedDate||'';
 document.getElementById('f-coc-approved').value=p.cocApprovedDate||'';
+if(p.type==='COC'){
+  clearLinkedIC();
+  if(p.linkedICProjectId){
+    const linkedIC=projects.find(x=>x.id===parseInt(p.linkedICProjectId));
+    if(linkedIC)selectLinkedIC(linkedIC.id);
+  } else if(p.pid){
+    // auto-suggest by matching pid
+    const suggested=projects.find(x=>x.type==='IC'&&x.pid&&x.pid===p.pid);
+    if(suggested)selectLinkedIC(suggested.id);
+  }
+}
 document.getElementById('f-hp-enrolled').value=p.hpEnrolled||'';
 document.getElementById('f-hp-ic-link').value=p.hpIcLink||'';
 document.getElementById('f-rebate-amount').value=p.rebateAmount||'';
@@ -1866,6 +1905,34 @@ document.getElementById('modal').style.display='flex';
 pendingApprovalSave=null;
 }
 }
+function searchLinkedIC(q){
+  const dd=document.getElementById('ic-link-dropdown');
+  if(!q||q.length<2){dd.style.display='none';return;}
+  const ql=q.toLowerCase();
+  const matches=projects.filter(p=>p.type==='IC'&&(
+    (p.name||'').toLowerCase().includes(ql)||(p.pid||'').toLowerCase().includes(ql)
+  )).slice(0,8);
+  if(!matches.length){dd.innerHTML='<div style="padding:10px 12px;font-size:13px;color:var(--text3)">No IC projects found</div>';dd.style.display='block';return;}
+  dd.innerHTML=matches.map(p=>`<div onclick="selectLinkedIC(${p.id})" style="padding:8px 12px;cursor:pointer;font-size:13px;border-bottom:0.5px solid var(--border)" onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''">
+    <div style="font-weight:500">${p.name}</div>
+    <div style="font-size:11px;color:var(--text2)">${p.pid?'ComEd ID: '+p.pid+' · ':''}IC ${p.icApprovedDate?'Approved: '+p.icApprovedDate:'Status: '+p.status}</div>
+  </div>`).join('');
+  dd.style.display='block';
+}
+function selectLinkedIC(id){
+  const p=projects.find(x=>x.id===id);if(!p)return;
+  document.getElementById('f-linked-ic-id').value=id;
+  document.getElementById('f-linked-ic-search').value=p.name+(p.pid?' ('+p.pid+')':'');
+  document.getElementById('ic-link-dropdown').style.display='none';
+  const disp=document.getElementById('f-linked-ic-display');
+  disp.innerHTML='🔗 <strong>'+p.name+'</strong>'+(p.pid?' · ComEd ID: '+p.pid:'')+(p.icApprovedDate?'<span style="margin-left:8px;color:var(--st);font-size:12px">✓ IC Approved: '+p.icApprovedDate+'</span>':'<span style="margin-left:8px;color:var(--text3);font-size:12px">Status: '+p.status+'</span>')+'<button onclick="clearLinkedIC()" style="margin-left:8px;font-size:11px;padding:1px 6px;border-radius:4px;border:0.5px solid var(--border2);background:transparent;cursor:pointer;color:var(--text2)">✕ Remove</button>';
+  disp.style.display='block';
+}
+function clearLinkedIC(){
+  document.getElementById('f-linked-ic-id').value='';
+  document.getElementById('f-linked-ic-search').value='';
+  document.getElementById('f-linked-ic-display').style.display='none';
+}
 function saveProject(){
 const name=document.getElementById('f-name').value.trim();
 const pid=document.getElementById('f-pid').value.trim();
@@ -1920,7 +1987,7 @@ created:new Date().toISOString().slice(0,10)
 if(isResolved)corList=corList.map(c=>({...c,status:'Resolved'}));
 const hasCor=!isResolved&&corList.some(c=>c.status!=='Resolved');
 const latestCor=corList.filter(c=>c.status!=='Resolved').slice(-1)[0]||corList.slice(-1)[0]||{};
-const p={id:editId||nextId++,name,pid:document.getElementById('f-pid').value.trim(),address:document.getElementById('f-address').value.trim(),type:t,subtype:document.getElementById('f-subtype').value,status,assignee:document.getElementById('f-assignee').value,received:document.getElementById('f-received').value,deadline:document.getElementById('f-deadline').value,notes:document.getElementById('f-notes').value.trim(),ubName:document.getElementById('f-ubname').value.trim(),pmName:document.getElementById('f-pm').value.trim(),hasCor,corList,corType:latestCor.corType||'',corReceived:latestCor.corReceived||'',corDue:latestCor.corDue||'',corNotes:latestCor.corNotes||'',icHpLink:'',icApprovedDate:document.getElementById('f-ic-approved').value,cocApprovedDate:document.getElementById('f-coc-approved').value,hpEnrolled:hpDate,hpIcLink:'',hpRebateLink:'',rebateHpLink:'',rebateAmount:document.getElementById('f-rebate-amount').value,rebateProgram:document.getElementById('f-rebate-program').value.trim(),activityLog:existing?existing.activityLog||[]:[],created:existing?existing.created:new Date().toISOString().slice(0,10),updated:new Date().toISOString().slice(0,10),lastEditedBy:myViewerName||'Unknown',lastEditedAt:new Date().toISOString()};
+const p={id:editId||nextId++,name,pid:document.getElementById('f-pid').value.trim(),address:document.getElementById('f-address').value.trim(),type:t,subtype:document.getElementById('f-subtype').value,status,assignee:document.getElementById('f-assignee').value,received:document.getElementById('f-received').value,deadline:document.getElementById('f-deadline').value,notes:document.getElementById('f-notes').value.trim(),ubName:document.getElementById('f-ubname').value.trim(),pmName:document.getElementById('f-pm').value.trim(),hasCor,corList,corType:latestCor.corType||'',corReceived:latestCor.corReceived||'',corDue:latestCor.corDue||'',corNotes:latestCor.corNotes||'',icHpLink:'',icApprovedDate:document.getElementById('f-ic-approved').value,cocApprovedDate:document.getElementById('f-coc-approved').value,linkedICProjectId:document.getElementById('f-linked-ic-id').value?parseInt(document.getElementById('f-linked-ic-id').value)||document.getElementById('f-linked-ic-id').value:'',hpEnrolled:hpDate,hpIcLink:'',hpRebateLink:'',rebateHpLink:'',rebateAmount:document.getElementById('f-rebate-amount').value,rebateProgram:document.getElementById('f-rebate-program').value.trim(),activityLog:existing?existing.activityLog||[]:[],created:existing?existing.created:new Date().toISOString().slice(0,10),updated:new Date().toISOString().slice(0,10),lastEditedBy:myViewerName||'Unknown',lastEditedAt:new Date().toISOString()};
 if(editId){const i=projects.findIndex(x=>x.id===editId);if(i>-1)projects[i]=p;}
 else projects.push(p);
 saveProjectToSupabase(p).catch(()=>{});
@@ -1969,11 +2036,27 @@ save();render();closeDetail();
 });
 }
 function deleteCor(id){
-showDeleteConfirm('this correction',()=>{
-corrections=corrections.filter(x=>x.id!==id);
-deleteCorrectionFromSupabase(id).catch(()=>{});
-save();render();closeDetail();
-});
+  // cl_ ids are project-embedded corrections (from corList), not standalone
+  if(String(id).startsWith('cl_')){
+    // Find the correction from the last rendered list
+    const c=_lastCorList&&_lastCorList.find(x=>String(x.id)===String(id));
+    if(!c){showToast('Correction not found.');return;}
+    deleteCorInPanel(c.linkedProjectId,encodeURIComponent(c.corNotes||''),encodeURIComponent(c.corType||''));
+    return;
+  }
+  showDeleteConfirm('this correction',()=>{
+    const numId=parseInt(id);
+    const origCorrections=[...corrections];
+    corrections=corrections.filter(x=>parseInt(x.id)!==numId);
+    render();
+    deleteCorrectionFromSupabase(numId).then(()=>{
+      save();closeDetail();showToast('Correction deleted.');
+    }).catch((e)=>{
+      console.error('Delete correction failed:',e);
+      corrections=origCorrections;render();
+      showToast('Delete failed — check Supabase permissions.');
+    });
+  });
 }
 let pendingDeleteFn=null;
 function showDeleteConfirm(name,onConfirm){
@@ -2139,8 +2222,16 @@ hpSec='\x3cdiv class="hp-section">\x3cdiv class="dl">HP Enrollment\x3c/div>\x3cd
 if(p.rebateAmount){
 rebSec='\x3cdiv class="rebate-section">\x3cdiv class="dl">Rebate\x3c/div>\x3cdiv class="dv" style="font-size:20px;font-weight:600;margin-top:4px">'+fmtMoney(p.rebateAmount)+'\x3c/div>'+(p.rebateProgram?'\x3cdiv class="dv" style="font-size:12px;margin-top:3px">'+p.rebateProgram+'\x3c/div>':'')+'\x3c/div>';
 }
-if(p.type==='IC'){icSec='\x3cdiv style="display:grid;grid-template-columns:1fr 1fr;gap:10px">\x3cdiv>\x3cdiv class="dl">Submitted\x3c/div>\x3cdiv class="dv">'+fmtDate(p.received)+'\x3c/div>\x3c/div>\x3cdiv>\x3cdiv class="dl">IC Approved\x3c/div>\x3cdiv class="dv">'+fmtDate(p.icApprovedDate)+'\x3c/div>\x3c/div>'+(p.pmName?'\x3cdiv>\x3cdiv class="dl">PM\x3c/div>\x3cdiv class="dv">'+p.pmName+'\x3c/div>\x3c/div>':'')+'\x3c/div>';}
-if(p.type==='COC'){cocSec='\x3cdiv style="display:grid;grid-template-columns:1fr 1fr;gap:10px">\x3cdiv>\x3cdiv class="dl">Submitted\x3c/div>\x3cdiv class="dv">'+fmtDate(p.received)+'\x3c/div>\x3c/div>\x3cdiv>\x3cdiv class="dl">COC Approved\x3c/div>\x3cdiv class="dv">'+(fmtDate(p.cocApprovedDate)||'\x3cspan style="color:var(--text3)">Pending\x3c/span>')+'\x3c/div>\x3c/div>\x3c/div>';}
+if(p.type==='IC'){
+  const linkedCOCs=projects.filter(x=>x.type==='COC'&&parseInt(x.linkedICProjectId)===p.id);
+  const cocBadges=linkedCOCs.length?linkedCOCs.map(coc=>'\x3cdiv style="margin-top:6px;padding:8px 10px;background:var(--bg2);border-radius:var(--r);border:0.5px solid var(--border);cursor:pointer" onclick="showDetail('+coc.id+')">\x3cdiv style="font-size:11px;color:var(--text2);margin-bottom:3px">🔗 LINKED COC PROJECT\x3c/div>\x3cdiv style="font-size:13px;font-weight:500">'+coc.name+'\x3c/div>\x3cdiv style="font-size:12px;color:var(--text2);margin-top:2px">'+(coc.pid?'ComEd ID: '+coc.pid+' · ':'')+'COC Status: '+coc.status+'\x3c/div>\x3c/div>').join(''):'';
+  icSec='\x3cdiv style="display:grid;grid-template-columns:1fr 1fr;gap:10px">\x3cdiv>\x3cdiv class="dl">Submitted\x3c/div>\x3cdiv class="dv">'+fmtDate(p.received)+'\x3c/div>\x3c/div>\x3cdiv>\x3cdiv class="dl">IC Approved\x3c/div>\x3cdiv class="dv">'+fmtDate(p.icApprovedDate)+'\x3c/div>\x3c/div>'+(p.pmName?'\x3cdiv>\x3cdiv class="dl">PM\x3c/div>\x3cdiv class="dv">'+p.pmName+'\x3c/div>\x3c/div>':'')+'\x3c/div>'+cocBadges;
+}
+if(p.type==='COC'){
+  const linkedIC=p.linkedICProjectId?projects.find(x=>x.id===parseInt(p.linkedICProjectId)):null;
+  const icBadge=linkedIC?'\x3cdiv style="margin-top:8px;padding:8px 10px;background:var(--bg2);border-radius:var(--r);border:0.5px solid var(--border);cursor:pointer" onclick="showDetail('+linkedIC.id+')">\x3cdiv style="font-size:11px;color:var(--text2);margin-bottom:3px">🔗 LINKED IC PROJECT\x3c/div>\x3cdiv style="font-size:13px;font-weight:500">'+linkedIC.name+'\x3c/div>\x3cdiv style="font-size:12px;color:var(--text2);margin-top:2px">'+(linkedIC.pid?'ComEd ID: '+linkedIC.pid+' · ':'')+(linkedIC.icApprovedDate?'\x3cspan style="color:var(--st)">✓ IC Approved: '+fmtDate(linkedIC.icApprovedDate)+'\x3c/span>':'Status: '+linkedIC.status)+'\x3c/div>\x3c/div>':'\x3cdiv style="margin-top:8px;font-size:12px;color:var(--text3)">No IC project linked — edit to add one\x3c/div>';
+  cocSec='\x3cdiv style="display:grid;grid-template-columns:1fr 1fr;gap:10px">\x3cdiv>\x3cdiv class="dl">Submitted\x3c/div>\x3cdiv class="dv">'+fmtDate(p.received)+'\x3c/div>\x3c/div>\x3cdiv>\x3cdiv class="dl">COC Approved\x3c/div>\x3cdiv class="dv">'+(fmtDate(p.cocApprovedDate)||'\x3cspan style="color:var(--text3)">Pending\x3c/span>')+'\x3c/div>\x3c/div>\x3c/div>'+icBadge;
+}
 let allCors=[];
 if(p.corList&&p.corList.length){
   // Deduplicate by corType+corNotes to remove accidental duplicates
@@ -2173,9 +2264,9 @@ document.getElementById('note-input-area').style.display=canEdit?'block':'none';
 document.getElementById('detail-panel').style.display='flex';
 }
 function showCorDetail(id){
-id=parseInt(id)||id;
-const c=corrections.find(x=>x.id===id);if(!c)return;detailId=id;
-document.getElementById('detail-content').innerHTML='\x3cdiv class="dp-h">\x3cdiv>\x3ch2>'+c.name+'\x3c/h2>'+(c.pid?'\x3cdiv style="font-size:14px;color:var(--text2)">'+c.pid+'\x3c/div>':'')+'\x3c/div>\x3cbutton class="close-btn" onclick="closeDetail()">&#x2715;\x3c/button>\x3c/div>\x3cdiv style="display:flex;gap:6px">'+typeBadge(c.type,'')+' \x3cspan class="badge b-COR">Correction\x3c/span>\x3c/div>\x3chr class="d-divider">\x3cdiv style="display:grid;grid-template-columns:1fr 1fr;gap:12px">\x3cdiv>\x3cdiv class="dl">Assignee\x3c/div>\x3cdiv style="display:flex;align-items:center;gap:6px;margin-top:3px">\x3cspan class="avatar">'+initials(c.assignee)+'\x3c/span>\x3cspan class="dv">'+c.assignee+'\x3c/span>\x3c/div>\x3c/div>\x3cdiv>\x3cdiv class="dl">Due\x3c/div>\x3cdiv class="dv">'+fmtDate(c.corDue)+'\x3c/div>\x3c/div>\x3cdiv>\x3cdiv class="dl">Correction Type\x3c/div>\x3cdiv class="dv">'+c.corType+'\x3c/div>\x3c/div>\x3c/div>\x3cdiv class="cor-section">\x3cdiv class="dl">Details\x3c/div>\x3cdiv class="dv" style="font-size:12px;line-height:1.55;white-space:pre-wrap;margin-top:4px">'+(c.corNotes||'--')+'\x3c/div>\x3c/div>\x3cdiv style="display:flex;gap:8px">\x3cbutton class="btn-s" style="flex:1;font-size:13px" onclick="resolveCorrection('+c.id+');closeDetail()">'+(c.status==='Resolved'?'Reopen':'Mark Resolved')+'\x3c/button>'+(pinUnlocked?'\x3cbutton class="btn-c" style="font-size:13px" onclick="deleteCor('+c.id+')">Delete\x3c/button>':'')+'\x3c/div>';
+id=String(id).startsWith('cl_')?String(id):(parseInt(id)||id);
+const c=(String(id).startsWith('cl_')?(_lastCorList&&_lastCorList.find(x=>String(x.id)===String(id))):corrections.find(x=>x.id===id));if(!c)return;detailId=id;
+document.getElementById('detail-content').innerHTML='\x3cdiv class="dp-h">\x3cdiv>\x3ch2>'+c.name+'\x3c/h2>'+(c.pid?'\x3cdiv style="font-size:14px;color:var(--text2)">'+c.pid+'\x3c/div>':'')+'\x3c/div>\x3cbutton class="close-btn" onclick="closeDetail()">&#x2715;\x3c/button>\x3c/div>\x3cdiv style="display:flex;gap:6px">'+typeBadge(c.type,'')+' \x3cspan class="badge b-COR">Correction\x3c/span>\x3c/div>\x3chr class="d-divider">\x3cdiv style="display:grid;grid-template-columns:1fr 1fr;gap:12px">\x3cdiv>\x3cdiv class="dl">Assignee\x3c/div>\x3cdiv style="display:flex;align-items:center;gap:6px;margin-top:3px">\x3cspan class="avatar">'+initials(c.assignee)+'\x3c/span>\x3cspan class="dv">'+c.assignee+'\x3c/span>\x3c/div>\x3c/div>\x3cdiv>\x3cdiv class="dl">Due\x3c/div>\x3cdiv class="dv">'+fmtDate(c.corDue)+'\x3c/div>\x3c/div>\x3cdiv>\x3cdiv class="dl">Correction Type\x3c/div>\x3cdiv class="dv">'+c.corType+'\x3c/div>\x3c/div>\x3c/div>\x3cdiv class="cor-section">\x3cdiv class="dl">Details\x3c/div>\x3cdiv class="dv" style="font-size:12px;line-height:1.55;white-space:pre-wrap;margin-top:4px">'+(c.corNotes||'--')+'\x3c/div>\x3c/div>\x3cdiv style="display:flex;gap:8px">\x3cbutton class="btn-s" style="flex:1;font-size:13px;box-shadow:inset 0 2px 0 rgba(255,255,255,0.2),0 2px 4px rgba(0,0,0,0.2);text-shadow:0 1px 1px rgba(0,0,0,0.2)" onclick="resolveCorrection('+c.id+');closeDetail()">'+(c.status==='Resolved'?'Reopen':'Mark Resolved')+'\x3c/button>'+(pinUnlocked?'\x3cbutton style="font-size:13px;padding:8px 18px;border-radius:var(--r);cursor:pointer;border:none;background:#dc2626;color:#fff;font-weight:600;box-shadow:0 2px 4px rgba(220,38,38,0.4)" onclick="deleteCor('+c.id+')">Delete\x3c/button>':'')+'\x3c/div>';
 document.getElementById('note-input-area').style.display='none';
 document.getElementById('detail-panel').style.display='flex';
 }
@@ -2432,6 +2523,8 @@ downloadXLS(buildXLSX(sheets),'monthly_report_'+from+'_to_'+to+'.xls');
 showToast('Exported successfully!');
 }
 load();updateStatusDropdown();render();applyEditMode();
+
+
 
 
 
