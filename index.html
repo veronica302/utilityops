@@ -1986,9 +1986,16 @@ save();render();closeDetail();
 function deleteCor(id){
 showDeleteConfirm('this correction',()=>{
 id=parseInt(id);
+const origCorrections=[...corrections];
 corrections=corrections.filter(x=>parseInt(x.id)!==id);
-deleteCorrectionFromSupabase(id).catch(()=>{});
-save();render();closeDetail();
+render();
+deleteCorrectionFromSupabase(id).then(()=>{
+  save();closeDetail();showToast('Correction deleted.');
+}).catch((e)=>{
+  console.error('Delete correction failed:',e);
+  corrections=origCorrections;render();
+  showToast('Delete failed — check Supabase permissions.');
+});
 });
 }
 let pendingDeleteFn=null;
