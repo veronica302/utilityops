@@ -741,8 +741,8 @@ async function loadFromSupabase() {
     if (sRows) {
       const nextIdRow = sRows.find(r => r.key === 'nextId');
       const nextCorIdRow = sRows.find(r => r.key === 'nextCorId');
-      if (nextIdRow) nextId = nextIdRow.value;
-      if (nextCorIdRow) nextCorId = nextCorIdRow.value;
+      if (nextIdRow) nextId = parseInt(nextIdRow.value);
+      if (nextCorIdRow) nextCorId = parseInt(nextCorIdRow.value);
     }
     showToast('Data loaded - ' + projects.length + ' projects');
     await cleanupDuplicateCorrections();
@@ -1985,7 +1985,8 @@ save();render();closeDetail();
 }
 function deleteCor(id){
 showDeleteConfirm('this correction',()=>{
-corrections=corrections.filter(x=>x.id!==id);
+id=parseInt(id);
+corrections=corrections.filter(x=>parseInt(x.id)!==id);
 deleteCorrectionFromSupabase(id).catch(()=>{});
 save();render();closeDetail();
 });
