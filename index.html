@@ -698,6 +698,7 @@ tr.dr:hover td{background:var(--bg2);cursor:pointer}
 
 
 
+
 const SUPABASE_URL = 'https://qdonrprtccrprqxefomv.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFkb25ycHJ0Y2NycHJxeGVmb212Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwODU0NjgsImV4cCI6MjA5MTY2MTQ2OH0.NWZkYz7q5_JTA_UvUwhWEEEwCTTMPCPHnuio9Q2nv4s';
 
@@ -770,11 +771,13 @@ async function saveAllProjectsToSupabase() {
 
 async function saveProjectToSupabase(p) {
   window._lastSaveTime = Date.now();
-  await sbFetch('/rest/v1/projects', {
+  const result = await sbFetch('/rest/v1/projects', {
     method: 'POST',
     prefer: 'resolution=merge-duplicates',
     body: JSON.stringify({id: p.id, data: p})
   });
+  console.log('Saved project '+p.id+' to Supabase, corList length: '+(p.corList?p.corList.length:0));
+  return result;
 }
 
 async function saveCorrectionToSupabase(c) {
@@ -1062,43 +1065,36 @@ function deleteCorInPanel(projectId,encodedNotes,encodedType){
   var p=projects.find(function(x){return x.id===projectId;});
   if(!p){showToast('Project not found.');return;}
   showDeleteConfirm('this correction',function(){
-    window._lastSaveTime=Date.now();
+    window._lastSaveTime=Date.now()+30000; // block poll for 30s
     if(!p.corList)p.corList=[];
     // Remove from corList
+    var before=p.corList.length;
     p.corList=p.corList.filter(function(c){
       return !((c.corNotes||'').trim()===(targetNotes).trim()&&(c.corType||'')===targetType);
     });
+    console.log('Removed '+(before-p.corList.length)+' from corList, '+p.corList.length+' remain');
     if(p.corList.length===0)p.hasCor=false;
     p.lastEditedBy=myViewerName||'Unknown';
     p.lastEditedAt=new Date().toISOString();
-    // Remove from local corrections array and delete from Supabase by id
+    // Remove matching standalone corrections and delete from Supabase
     corrections=corrections.filter(function(c){
       var match=parseInt(c.linkedProjectId)===projectId
         &&(c.corNotes||'').trim()===(targetNotes).trim()
         &&(c.corType||'')===targetType;
-      if(match&&c.id){
-        sbFetch('/rest/v1/corrections?id=eq.'+c.id,{method:'DELETE'}).catch(function(){});
-      }
+      if(match&&c.id) sbFetch('/rest/v1/corrections?id=eq.'+c.id,{method:'DELETE'}).catch(function(){});
       return !match;
     });
-    // Also fetch and delete from Supabase directly (in case id was missing)
-    sbFetch('/rest/v1/corrections?linkedProjectId=eq.'+projectId+'&select=id,data')
-      .then(function(rows){
-        if(!rows)return;
-        rows.forEach(function(row){
-          var d=row.data||{};
-          if((d.corNotes||'').trim()===(targetNotes).trim()&&(d.corType||'')===targetType){
-            sbFetch('/rest/v1/corrections?id=eq.'+row.id,{method:'DELETE'}).catch(function(){});
-          }
-        });
-      }).catch(function(){});
-    // Save updated project to Supabase
+    // Save the project (with corList already modified)
     saveProjectToSupabase(p).then(function(){
+      console.log('Project saved successfully');
       save();
       showDetail(projectId);
       render();
       showToast('Correction deleted.');
-    }).catch(function(){showToast('Error saving. Try again.');});
+    }).catch(function(e){
+      console.error('Save failed:',e);
+      showToast('Save failed - please try again.');
+    });
   });
 }
 function load(){
@@ -2451,6 +2447,7 @@ downloadXLS(buildXLSX(sheets),'monthly_report_'+from+'_to_'+to+'.xls');
 showToast('Exported successfully!');
 }
 load();updateStatusDropdown();render();applyEditMode();
+
 
 
 
