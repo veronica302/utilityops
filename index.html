@@ -694,6 +694,7 @@ tr.dr:hover td{background:var(--bg2);cursor:pointer}
 
 
 
+
 const SUPABASE_URL = 'https://qdonrprtccrprqxefomv.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFkb25ycHJ0Y2NycHJxeGVmb212Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwODU0NjgsImV4cCI6MjA5MTY2MTQ2OH0.NWZkYz7q5_JTA_UvUwhWEEEwCTTMPCPHnuio9Q2nv4s';
 
@@ -954,12 +955,13 @@ function exportCorReportXLS(){
 }
 
 
-function resolveCorInPanel(projectId,i){
+function resolveCorInPanel(projectId,encodedNotes,encodedType){
   projectId=parseInt(projectId)||projectId;
-  var mk=projectId+'_'+i,mp=window._corMap&&window._corMap[mk];
+  var targetNotes=decodeURIComponent(encodedNotes||'');
+  var targetType=decodeURIComponent(encodedType||'');
   const p=projects.find(x=>x.id===projectId);
   if(!p||!p.corList)return;
-  const ci=mp?p.corList.findIndex(c=>(c.corNotes||'')===mp.n&&(c.corType||'')===mp.t):i;
+  const ci=p.corList.findIndex(c=>(c.corNotes||'').trim()===targetNotes.trim()&&(c.corType||'')===targetType);
   if(ci===-1||!p.corList[ci])return;
   const c=p.corList[ci];
   c.status=c.status==='Resolved'?'Open':'Resolved';
@@ -997,8 +999,10 @@ function buildCorItems(allCors, projResolved, projectId){
     if(c.corNotes)html+='<div style="font-size:12px;line-height:1.6;white-space:pre-wrap;padding:8px;background:var(--bg);border-radius:var(--r);border:0.5px solid var(--db)">'+c.corNotes+'</div>';
     if(canEdit&&!projResolved){
       var btnStyle='margin-top:8px;font-size:12px;padding:4px 12px;border-radius:var(--r);cursor:pointer;border:0.5px solid '+(c.status==='Resolved'?'var(--st)':'var(--border2)')+';background:'+(c.status==='Resolved'?'var(--sbg)':'transparent')+';color:'+(c.status==='Resolved'?'var(--st)':'var(--text2)');
-      html+='<div style="display:flex;gap:6px;margin-top:8px"><button style="'+btnStyle+'" onclick="resolveCorInPanel('+projectId+','+i+')">'+(c.status==='Resolved'?'✓ Resolved':'Mark as Resolved')+'</button>';
-      if(pinUnlocked)html+='<button style="font-size:12px;padding:4px 10px;border-radius:var(--r);cursor:pointer;border:0.5px solid var(--db);background:var(--dbg);color:var(--dt)" onclick="deleteCorInPanel('+projectId+','+i+')">🗑 Del</button>';
+      var safeNotes=encodeURIComponent(c.corNotes||'');
+      var safeType=encodeURIComponent(c.corType||'');
+      html+='<div style="display:flex;gap:6px;margin-top:8px"><button style="'+btnStyle+'" onclick="resolveCorInPanel('+projectId+',\''+safeNotes+'\',\''+safeType+'\')">'+(c.status==='Resolved'?'✓ Resolved':'Mark as Resolved')+'</button>';
+      if(pinUnlocked)html+='<button style="font-size:12px;padding:4px 10px;border-radius:var(--r);cursor:pointer;border:0.5px solid var(--db);background:var(--dbg);color:var(--dt)" onclick="deleteCorInPanel('+projectId+',\''+safeNotes+'\',\''+safeType+'\')">🗑 Del</button>';
       html+='</div>';
     }
     html+='</div>';
@@ -1043,15 +1047,12 @@ async function cleanupDuplicateCorrections(){
   });
 }
 
-function deleteCorInPanel(projectId,i){
+function deleteCorInPanel(projectId,encodedNotes,encodedType){
   projectId=parseInt(projectId)||projectId;
-  var mk=String(projectId)+'_'+i;
-  var mp=window._corMap&&window._corMap[mk];
+  var targetNotes=decodeURIComponent(encodedNotes||'');
+  var targetType=decodeURIComponent(encodedType||'');
   var p=projects.find(function(x){return x.id===projectId;});
   if(!p){showToast('Project not found.');return;}
-  if(!mp&&(!p.corList||!p.corList[i])){showToast('Correction not found.');return;}
-  var targetNotes=mp?mp.n:(p.corList[i]?p.corList[i].corNotes||'':'');
-  var targetType=mp?mp.t:(p.corList[i]?p.corList[i].corType||'':'');
   showDeleteConfirm('this correction',function(){
     if(!p.corList)p.corList=[];
     // Remove ALL matching from corList (handles duplicates too)
@@ -2390,6 +2391,7 @@ downloadXLS(buildXLSX(sheets),'monthly_report_'+from+'_to_'+to+'.xls');
 showToast('Exported successfully!');
 }
 load();updateStatusDropdown();render();applyEditMode();
+
 
 
 
