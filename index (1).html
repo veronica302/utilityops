@@ -687,6 +687,16 @@ tr.dr:hover td{background:var(--bg2);cursor:pointer}
 
 
 
+
+
+
+
+
+
+
+
+
+
 const SUPABASE_URL = 'https://qdonrprtccrprqxefomv.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFkb25ycHJ0Y2NycHJxeGVmb212Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwODU0NjgsImV4cCI6MjA5MTY2MTQ2OH0.NWZkYz7q5_JTA_UvUwhWEEEwCTTMPCPHnuio9Q2nv4s';
 
@@ -758,6 +768,7 @@ async function saveAllProjectsToSupabase() {
 }
 
 async function saveProjectToSupabase(p) {
+  window._lastSaveTime = Date.now();
   await sbFetch('/rest/v1/projects', {
     method: 'POST',
     prefer: 'resolution=merge-duplicates',
@@ -766,6 +777,7 @@ async function saveProjectToSupabase(p) {
 }
 
 async function saveCorrectionToSupabase(c) {
+  window._lastSaveTime = Date.now();
   await sbFetch('/rest/v1/corrections', {
     method: 'POST',
     prefer: 'resolution=merge-duplicates',
@@ -774,6 +786,7 @@ async function saveCorrectionToSupabase(c) {
 }
 
 async function deleteCorrectionFromSupabase(id) {
+  window._lastSaveTime = Date.now();
   await sbFetch('/rest/v1/corrections?id=eq.' + id, {method: 'DELETE'});
 }
 
@@ -803,6 +816,8 @@ function startPolling() {
   if (pollTimer) clearInterval(pollTimer);
   pollTimer = setInterval(async () => {
     try {
+      // Skip poll if we saved within the last 15 seconds to avoid overwriting local changes
+      if(window._lastSaveTime && Date.now() - window._lastSaveTime < 15000) return;
       const pRows = await sbFetch('/rest/v1/projects?select=id,data&order=id.asc&limit=2000');
       if (pRows) {
         projects = pRows.map(r => r.data);
@@ -947,11 +962,15 @@ function exportCorReportXLS(){
 }
 
 
-function resolveCorInPanel(projectId,corIndex){
+function resolveCorInPanel(projectId,encodedNotes,encodedType){
   projectId=parseInt(projectId)||projectId;
+  var targetNotes=decodeURIComponent(encodedNotes||'');
+  var targetType=decodeURIComponent(encodedType||'');
   const p=projects.find(x=>x.id===projectId);
-  if(!p||!p.corList||!p.corList[corIndex])return;
-  const c=p.corList[corIndex];
+  if(!p||!p.corList)return;
+  const ci=p.corList.findIndex(c=>(c.corNotes||'').trim()===targetNotes.trim()&&(c.corType||'')===targetType);
+  if(ci===-1||!p.corList[ci])return;
+  const c=p.corList[ci];
   c.status=c.status==='Resolved'?'Open':'Resolved';
   p.lastEditedBy=myViewerName||'Unknown';
   p.lastEditedAt=new Date().toISOString();
@@ -970,8 +989,10 @@ function resolveCorInPanel(projectId,corIndex){
 }
 
 function buildCorItems(allCors, projResolved, projectId){
+  window._corMap={};
   var dlabel='<div class="dl" style="margin-bottom:8px">Corrections from ComEd ('+allCors.length+')</div>';
   var items=allCors.map(function(c,i){
+    window._corMap[projectId+'_'+i]={n:c.corNotes||'',t:c.corType||''};
     var border=allCors.length-1>i?'0.5px solid var(--db)':'none';
     var mb=allCors.length-1>i?'12px':'0';
     var opacity=c.status==='Resolved'||projResolved?'0.65':'1';
@@ -985,8 +1006,10 @@ function buildCorItems(allCors, projResolved, projectId){
     if(c.corNotes)html+='<div style="font-size:12px;line-height:1.6;white-space:pre-wrap;padding:8px;background:var(--bg);border-radius:var(--r);border:0.5px solid var(--db)">'+c.corNotes+'</div>';
     if(canEdit&&!projResolved){
       var btnStyle='margin-top:8px;font-size:12px;padding:4px 12px;border-radius:var(--r);cursor:pointer;border:0.5px solid '+(c.status==='Resolved'?'var(--st)':'var(--border2)')+';background:'+(c.status==='Resolved'?'var(--sbg)':'transparent')+';color:'+(c.status==='Resolved'?'var(--st)':'var(--text2)');
-      html+='<div style="display:flex;gap:6px;margin-top:8px"><button style="'+btnStyle+'" onclick="resolveCorInPanel('+projectId+','+i+')">'+(c.status==='Resolved'?'✓ Resolved':'Mark as Resolved')+'</button>';
-      if(pinUnlocked)html+='<button style="font-size:12px;padding:4px 10px;border-radius:var(--r);cursor:pointer;border:0.5px solid var(--db);background:var(--dbg);color:var(--dt)" onclick="deleteCorInPanel('+projectId+','+i+')">🗑 Del</button>';
+      var safeNotes=encodeURIComponent(c.corNotes||'');
+      var safeType=encodeURIComponent(c.corType||'');
+      html+='<div style="display:flex;gap:6px;margin-top:8px"><button style="'+btnStyle+'" onclick="resolveCorInPanel('+projectId+',\''+safeNotes+'\',\''+safeType+'\')">'+(c.status==='Resolved'?'✓ Resolved':'Mark as Resolved')+'</button>';
+      if(pinUnlocked)html+='<button style="font-size:12px;padding:4px 10px;border-radius:var(--r);cursor:pointer;border:0.5px solid var(--db);background:var(--dbg);color:var(--dt)" onclick="deleteCorInPanel('+projectId+',\''+safeNotes+'\',\''+safeType+'\')">🗑 Del</button>';
       html+='</div>';
     }
     html+='</div>';
@@ -1031,36 +1054,32 @@ async function cleanupDuplicateCorrections(){
   });
 }
 
-function deleteCorInPanel(projectId, corIndex){
+function deleteCorInPanel(projectId,encodedNotes,encodedType){
   projectId=parseInt(projectId)||projectId;
+  var targetNotes=decodeURIComponent(encodedNotes||'');
+  var targetType=decodeURIComponent(encodedType||'');
   var p=projects.find(function(x){return x.id===projectId;});
-  if(!p||!p.corList)return;
+  if(!p){showToast('Project not found.');return;}
   showDeleteConfirm('this correction',function(){
-    var removed=p.corList.splice(corIndex,1)[0];
+    if(!p.corList)p.corList=[];
+    // Remove ALL matching from corList (handles duplicates too)
+    p.corList=p.corList.filter(function(c){
+      return !((c.corNotes||'').trim()===(targetNotes).trim()&&(c.corType||'')===targetType);
+    });
     if(p.corList.length===0)p.hasCor=false;
     p.lastEditedBy=myViewerName||'Unknown';
     p.lastEditedAt=new Date().toISOString();
-    // Remove matching standalone correction and delete from Supabase
-    var removedNotes=(removed?removed.corNotes||'':'').trim().toLowerCase();
-    var removedType=(removed?removed.corType||'':'');
-    var toDelete=corrections.filter(function(c){
-      return parseInt(c.linkedProjectId)===projectId
-        &&(c.corNotes||'').trim().toLowerCase()===removedNotes
-        &&(c.corType||'')===removedType;
-    });
-    toDelete.forEach(function(c){
-      deleteCorrectionFromSupabase(c.id).catch(function(){});
-    });
+    // Remove from standalone corrections
     corrections=corrections.filter(function(c){
-      return !(parseInt(c.linkedProjectId)===projectId
-        &&(c.corNotes||'').trim().toLowerCase()===removedNotes
-        &&(c.corType||'')===removedType);
+      var match=parseInt(c.linkedProjectId)===projectId
+        &&(c.corNotes||'').trim()===(targetNotes).trim()
+        &&(c.corType||'')===targetType;
+      if(match)deleteCorrectionFromSupabase(c.id).catch(function(){});
+      return !match;
     });
-    saveProjectToSupabase(p).catch(function(){});
-    save();
-    showDetail(projectId);
-    render();
-    showToast('Correction deleted.');
+    saveProjectToSupabase(p).then(function(){
+      save();showDetail(projectId);render();showToast('Correction deleted.');
+    }).catch(function(){showToast('Error saving. Try again.');});
   });
 }
 function load(){
@@ -1236,6 +1255,7 @@ function setPageSize(v){pageSize=parseInt(v);currentPage=1;render();}
 function getList(){
 if(mainTab==='COR'){
 const RESOLVED_STATUSES=['approved','payment processed','sent for payment','ready for payment','enrolled'];
+// Start with standalone corrections
 let list=[...corrections].filter(c=>{
 if(c.status==='Resolved')return false;
 if(c.linkedProjectId){
@@ -1245,8 +1265,21 @@ if(RESOLVED_STATUSES.some(s=>(p.status||'').toLowerCase()===s))return false;
 }
 return true;
 });
-if(searchQ){const q=searchQ.toLowerCase();list=list.filter(c=>c.name.toLowerCase().includes(q)||(c.pid||'').toLowerCase().includes(q));}
-list.sort((a,b)=>a.name.localeCompare(b.name));
+// Also add corList entries from projects that have no matching standalone correction
+projects.forEach(p=>{
+if(!p.corList||!p.corList.length)return;
+if(RESOLVED_STATUSES.some(s=>(p.status||'').toLowerCase()===s))return;
+p.corList.forEach(c=>{
+if(c.status==='Resolved')return;
+// Check if already in standalone corrections
+const already=list.some(x=>parseInt(x.linkedProjectId)===p.id&&(x.corNotes||'').trim()===(c.corNotes||'').trim()&&(x.corType||'')===(c.corType||''));
+if(!already){
+list.push({id:'cl_'+p.id+'_'+(c.corType||'')+'_'+Math.random(),name:p.name,pid:p.pid,type:p.type,assignee:p.assignee,corType:c.corType,corReceived:c.corReceived,corDue:c.corDue,corNotes:c.corNotes,status:c.status||'Open',linkedProjectId:String(p.id)});
+}
+});
+});
+if(searchQ){const q=searchQ.toLowerCase();list=list.filter(c=>(c.name||'').toLowerCase().includes(q)||(c.pid||'').toLowerCase().includes(q));}
+list.sort((a,b)=>(a.name||'').localeCompare(b.name||''));
 return{mode:'corrections',list};
 }
 let list=[...projects];
@@ -1510,7 +1543,27 @@ const pendingCOC=projects.filter(p=>p.type==='COC'&&!DONE_STATUSES.has((p.status
 const pendingRebate=projects.filter(p=>p.type==='Rebate'&&!PAID_REBATE.has((p.status||'').toLowerCase())).length;
 const nys=list.filter(p=>(p.status||'').toLowerCase()==='not yet submitted').length;
 const RESOLVED_S=['approved','payment processed','sent for payment','ready for payment','enrolled'];
-const openCorsAll=corrections.filter(c=>{
+// Count from standalone corrections
+const _openStandalone=corrections.filter(c=>{
+if(c.status==='Resolved')return false;
+if(c.linkedProjectId){
+const p=projects.find(x=>x.id===parseInt(c.linkedProjectId));
+if(!p)return false;
+if(RESOLVED_S.some(s=>(p.status||'').toLowerCase()===s))return false;
+}
+return true;
+});
+// Also count corList-only corrections not in standalone
+const _openCorList=[];
+projects.forEach(p=>{
+if(!p.corList||RESOLVED_S.some(s=>(p.status||'').toLowerCase()===s))return;
+p.corList.forEach(c=>{
+if(c.status==='Resolved')return;
+const already=_openStandalone.some(x=>parseInt(x.linkedProjectId)===p.id&&(x.corNotes||'').trim()===(c.corNotes||'').trim()&&(x.corType||'')===(c.corType||''));
+if(!already)_openCorList.push(c);
+});
+});
+const openCorsAll=[..._openStandalone,..._openCorList].filter(c=>{
 if(c.status==='Resolved')return false;
 if(c.linkedProjectId){
 const p=projects.find(x=>x.id===parseInt(c.linkedProjectId));
@@ -2057,9 +2110,10 @@ if(listAllResolved)p.hasCor=false;
 }
 p.lastEditedBy=myViewerName||'Unknown';
 p.lastEditedAt=new Date().toISOString();
+saveProjectToSupabase(p).catch(()=>{});
 }
 }
-save();render();
+saveCorrectionToSupabase(c).then(function(){save();render();}).catch(function(){save();render();});
 }
 function saveNote(){
 const text=document.getElementById('note-text').value.trim();if(!text)return;
@@ -2378,6 +2432,16 @@ downloadXLS(buildXLSX(sheets),'monthly_report_'+from+'_to_'+to+'.xls');
 showToast('Exported successfully!');
 }
 load();updateStatusDropdown();render();applyEditMode();
+
+
+
+
+
+
+
+
+
+
 
 
 
