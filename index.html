@@ -521,6 +521,7 @@ tr.dr:hover td{background:var(--bg2);cursor:pointer}
     </div>
     <div class="fr"><label>Assigned To *</label>
       <select id="f-assignee">
+        <option value="">— No Assignee —</option>
         <option value="Althesa Ancheta">Althesa Ancheta</option>
         <option value="Joy Completo">Joy Completo</option>
         <option value="Rachel Gendrano">Rachel Gendrano</option>
@@ -532,7 +533,7 @@ tr.dr:hover td{background:var(--bg2);cursor:pointer}
   <div class="fg">
     <div class="fr"><label>UB Name</label><input type="text" id="f-ubname" placeholder="Optional"></div>
     <div class="fr" style="position:relative">
-      <label>PM Name *</label>
+      <label>PM Name</label>
       <input type="text" id="f-pm" placeholder="Type or select PM..." autocomplete="off" oninput="filterPMList(this.value)" onfocus="filterPMList(this.value)" onblur="setTimeout(()=>document.getElementById('pm-dropdown').style.display='none',150)">
       <div id="pm-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:200;background:var(--bg);border:0.5px solid var(--border2);border-radius:var(--r);box-shadow:0 4px 16px rgba(0,0,0,.12);max-height:200px;overflow-y:auto;margin-top:2px"></div>
     </div>
@@ -674,9 +675,10 @@ tr.dr:hover td{background:var(--bg2);cursor:pointer}
   <div class="detail-panel">
     <div class="dp-top" id="detail-content"></div>
     <div class="note-input-area" id="note-input-area" style="display:none">
+      <div id="note-author-label" style="font-size:11px;color:var(--text2);margin-bottom:5px;font-weight:500;text-transform:uppercase;letter-spacing:.04em"></div>
       <textarea id="note-text" placeholder="Add a note or update..."></textarea>
       <div class="note-row">
-        <select id="note-author"><option>Joy</option><option>Althesa</option><option>Rachel</option><option>Manager</option></select>
+        <select id="note-author"><option value="">— Select name —</option><option>Joy</option><option>Althesa</option><option>Rachel</option><option>Manager</option></select>
         <button onclick="saveNote()">Add Note</button>
       </div>
     </div>
@@ -1764,7 +1766,7 @@ COC:['Not yet Submitted','Pending IC Approval','Pending Submission','Submitted',
 Rebate:['Not yet Submitted','Submitted','Saved','In Automated Review','Manual Review Required','More Information Required','Peer Review','Site Inspection','Sent for Payment','Ready For Payment','Payment Processed','Pending Interconnection','On Hold','Denied','Withdrawn'],
 HP:['Not yet Submitted','Enrolled','On Hold','Withdrawn'],
 };
-const PM_LIST=['Mary Ann Sante','Marielle Morla','Allaiza Velasquez','Angelica Capili','Dane Fullos','Francheska Alvarez','Genneva Arguelles','Liza Cequena','May Contestable'];
+const PM_LIST=['Mary Ann Sante','Marielle Morla','Allaiza Velasquez','Angelica Capili','Dane Fullos','Francheska Alvarez','Genneva Arguelles','Liza Cequena','May Contestable','Lester Belarmino','Dianne Orias','Ara Pascual'];
 function filterPMList(q){
 const dd=document.getElementById('pm-dropdown');
 const matches=q?PM_LIST.filter(n=>n.toLowerCase().includes(q.toLowerCase())):PM_LIST;
@@ -1994,7 +1996,7 @@ const status=document.getElementById('f-status').value;
 const errors=[];
 if(!name)errors.push('Customer Name');
 
-if(!pmName)errors.push('PM Name');
+if(!pmName&&t!=='Rebate')errors.push('PM Name');
 
 if(errors.length){
 showToast('Required: '+errors.join(', '));
@@ -2252,8 +2254,11 @@ function saveNote(){
 const text=document.getElementById('note-text').value.trim();if(!text)return;
 const p=projects.find(x=>x.id===detailId);if(!p)return;
 if(!p.activityLog)p.activityLog=[];
-p.activityLog.push({text,author:document.getElementById('note-author').value,ts:new Date().toISOString()});
-p.lastEditedBy=myViewerName||'Unknown';p.lastEditedAt=new Date().toISOString();
+// Use the logged-in viewer's name as the author
+const authorName=myViewerName||document.getElementById('note-author').value;
+if(!authorName){showToast('Please enter your name first.');return;}
+p.activityLog.push({text,author:authorName,ts:new Date().toISOString()});
+p.lastEditedBy=authorName;p.lastEditedAt=new Date().toISOString();
 saveProjectToSupabase(p).catch(()=>{});
 document.getElementById('note-text').value='';save();showDetail(detailId);
 }
@@ -2315,6 +2320,10 @@ corSec='<div class="cor-section">'+resolvedBanner+buildCorItems(allCors,projReso
 }
 document.getElementById('detail-content').innerHTML='\x3cdiv class="dp-h">\x3cdiv>\x3ch2>'+p.name+'\x3c/h2>'+(p.ubName?'\x3cdiv style="font-size:13px;color:var(--text2);margin-top:1px">UB: '+p.ubName+'\x3c/div>':'')+(p.pid?'\x3cdiv style="font-size:13px;color:var(--text2);margin-top:1px">ComEd ID: '+p.pid+'\x3c/div>':'')+(p.address?'\x3cdiv style="font-size:13px;color:var(--text2);margin-top:1px">📍 '+p.address+'\x3c/div>':'')+'\x3c/div>\x3cbutton class="close-btn" onclick="closeDetail()">&#x2715;\x3c/button>\x3c/div>\x3cdiv style="display:flex;gap:6px;flex-wrap:wrap">'+typeBadge(p.type,p.subtype)+' '+statusBadge(p.status)+'\x3c/div>\x3chr class="d-divider">\x3cdiv style="display:grid;grid-template-columns:1fr 1fr;gap:12px">\x3cdiv>\x3cdiv class="dl">Assignee\x3c/div>\x3cdiv style="display:flex;align-items:center;gap:6px;margin-top:3px">\x3cspan class="avatar">'+initials(p.assignee)+'\x3c/span>\x3cspan class="dv">'+(p.assignee||'--')+'\x3c/span>\x3c/div>\x3c/div>\x3cdiv>\x3cdiv class="dl">Deadline / Review\x3c/div>\x3cdiv class="dv">'+fmtDate(p.deadline)+(p.deadlineNote?'\x3cdiv style="font-size:11px;color:var(--wt);margin-top:2px">'+p.deadlineNote+'\x3c/div>':'')+'\x3c/div>\x3c/div>\x3c/div>'+icSec+cocSec+hpSec+rebSec+corSec+(p.notes?'\x3cdiv>\x3cdiv class="dl">Notes\x3c/div>\x3cdiv class="dv" style="font-size:12px;line-height:1.55;white-space:pre-wrap;margin-top:3px">'+p.notes.slice(0,600)+(p.notes.length>600?'...':'')+'\x3c/div>\x3c/div>':'')+'\x3chr class="d-divider">\x3cdiv>\x3cdiv class="dl" style="margin-bottom:8px">Activity Log ('+log.length+')\x3c/div>'+(!log.length?'\x3cdiv style="font-size:12px;color:var(--text3)">No notes yet.\x3c/div>':'')+'\x3cdiv class="activity-log">'+log.slice().reverse().map(e=>'\x3cdiv class="ae">\x3cdiv class="ae-meta">'+e.author+' &middot; '+new Date(e.ts).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'})+'\x3c/div>\x3cdiv class="ae-text">'+e.text+'\x3c/div>\x3c/div>').join('')+'\x3c/div>\x3c/div>\x3cdiv style="display:flex;gap:8px;margin-top:4px">\x3cbutton class="btn-s" style="flex:1;font-size:13px" onclick="editProject('+p.id+')">Edit project\x3c/button>\x3c/div>'+lastEditedSec;
 document.getElementById('note-input-area').style.display=canEdit?'block':'none';
+if(canEdit&&myViewerName){
+  const lbl=document.getElementById('note-author-label');
+  if(lbl)lbl.textContent='Saving note as: '+myViewerName;
+}
 document.getElementById('detail-panel').style.display='flex';
 }
 function showCorDetail(id){
@@ -2407,6 +2416,9 @@ canEdit=(pw===TEAM_PASSWORD||pw===OWNER_PIN);
 myViewerName=name;
 myViewerId=genId();
 document.getElementById('name-prompt-modal').style.display='none';
+// Hide note-author select since we'll use the logged-in name automatically
+const noteAuthorRow=document.querySelector('.note-row select');
+if(noteAuthorRow)noteAuthorRow.style.display='none';
 applyEditMode();
 registerViewer();
 startHeartbeat();
