@@ -1141,24 +1141,26 @@ function resolveCorInPanel(projectId,encodedNotes,encodedType){
   var targetNotes=decodeURIComponent(encodedNotes||'');
   var targetType=decodeURIComponent(encodedType||'');
   const p=projects.find(x=>x.id===projectId);
-  if(!p||!p.corList)return;
+  if(!p){showToast('Project not found.');return;}
+  if(!p.corList)p.corList=[];
   const ci=p.corList.findIndex(c=>(c.corNotes||'').trim()===targetNotes.trim()&&(c.corType||'')===targetType);
-  if(ci===-1||!p.corList[ci])return;
+  if(ci===-1){showToast('Correction not found in project.');return;}
   const c=p.corList[ci];
   c.status=c.status==='Resolved'?'Open':'Resolved';
   p.lastEditedBy=myViewerName||'Unknown';
   p.lastEditedAt=new Date().toISOString();
+  // Also update matching standalone correction if it exists
   const sc=corrections.find(function(x){
-    return x.corNotes===c.corNotes&&x.corReceived===c.corReceived&&parseInt(x.linkedProjectId)===projectId;
+    return String(x.linkedProjectId)===String(projectId)&&(x.corNotes||'').trim()===targetNotes.trim()&&(x.corType||'')===targetType;
   });
   if(sc){
     sc.status=c.status;
     saveCorrectionToSupabase(sc).catch(()=>{});
   }
-  saveProjectToSupabase(p).catch(()=>{});
-  save();
-  showDetail(projectId);
-  render();
+  saveProjectToSupabase(p).then(function(){
+    save();showDetail(projectId);render();
+    showToast(c.status==='Resolved'?'Marked as resolved!':'Reopened.');
+  }).catch(function(){save();showDetail(projectId);render();});
 }
 
 function buildCorItems(allCors, projResolved, projectId){
@@ -1768,17 +1770,8 @@ set('qf-nys-ic',nysIC);set('qf-nys-coc',nysCOC);set('qf-nys-rebate',nysRebate);
 set('qf-pend-ic',pendingIC);set('qf-pend-coc',pendingCOC);set('qf-pend-rebate',pendingRebate);
 }
 function renderAlerts(){
-const newRebates=projects.filter(p=>p.type==='Rebate'&&(p.status||'').toLowerCase()==='not yet submitted');
 const el=document.getElementById('alerts');
 if(el)el.innerHTML='';
-if(newRebates.length>0&&el){
-const bar=document.createElement('div');
-bar.className='alert-bar w';
-bar.innerHTML='<span style="font-size:16px">⚠️</span><span><strong>'+newRebates.length+' new rebate'+(newRebates.length!==1?'s':'')+' to be processed</strong> — marked "Not yet Submitted". Click to view.</span>';
-bar.style.cursor='pointer';
-bar.onclick=function(){clickMetric('newrebates');};
-el.appendChild(bar);
-}
 }
 function openReportCombined(tab){
 const now=new Date();
@@ -2404,17 +2397,19 @@ p.lastEditedBy=myViewerName||'Unknown';p.lastEditedAt=new Date().toISOString();
 saveProjectToSupabase(p).then(function(){save();render();showToast(toggledStatus==='Resolved'?'Marked as resolved!':'Reopened.');}).catch(function(){save();render();});
 return;
 }
-const c=corrections.find(x=>x.id===id);
-if(!c)return;
+// Normalize id — HTML onclick passes strings, but stored ids may be numbers
+const numId=parseInt(id);
+const c=corrections.find(x=>x.id===numId||x.id===id||String(x.id)===String(id));
+if(!c){showToast('Correction not found.');return;}
 c.status=c.status==='Resolved'?'Open':'Resolved';
 if(c.linkedProjectId){
 const p=projects.find(x=>x.id===parseInt(c.linkedProjectId));
 if(p&&p.corList){
-const match=p.corList.find(x=>x.corNotes===c.corNotes&&x.corReceived===c.corReceived);
+const match=p.corList.find(x=>(x.corNotes||'').trim()===(c.corNotes||'').trim()&&(x.corType||'')===(c.corType||''));
 if(match)match.status=c.status;
 }
 if(p){
-const allResolved=corrections.filter(x=>x.linkedProjectId===c.linkedProjectId).every(x=>x.status==='Resolved');
+const allResolved=corrections.filter(x=>String(x.linkedProjectId)===String(c.linkedProjectId)).every(x=>x.status==='Resolved');
 if(allResolved&&p.corList){const listAllResolved=p.corList.every(x=>x.status==='Resolved');if(listAllResolved)p.hasCor=false;}
 p.lastEditedBy=myViewerName||'Unknown';p.lastEditedAt=new Date().toISOString();
 saveProjectToSupabase(p).catch(()=>{});
