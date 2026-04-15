@@ -1441,14 +1441,20 @@ function setPageSize(v){pageSize=parseInt(v);currentPage=1;render();}
 function getList(){
 if(mainTab==='COR'){
 const RESOLVED_STATUSES=['approved','payment processed','sent for payment','ready for payment','enrolled'];
+// Helper: find project for a correction, tolerating bad linkedProjectId
+function findProjectForCor(c){
+  let p=null;
+  if(c.linkedProjectId){p=projects.find(x=>x.id===parseInt(c.linkedProjectId)||String(x.id)===String(c.linkedProjectId));}
+  if(!p&&c.name){p=projects.find(x=>x.name===c.name&&(x.type===c.type||!c.type));}
+  if(!p&&c.pid){p=projects.find(x=>x.pid===c.pid&&(x.type===c.type||!c.type));}
+  return p;
+}
 // Start with standalone corrections
 let list=[...corrections].filter(c=>{
 if(c.status==='Resolved')return false;
-if(c.linkedProjectId){
-const p=projects.find(x=>x.id===parseInt(c.linkedProjectId));
-if(!p)return false;
-if(RESOLVED_STATUSES.some(s=>(p.status||'').toLowerCase()===s))return false;
-}
+const p=findProjectForCor(c);
+if(c.linkedProjectId&&!p)return true; // show even if project not found — let user resolve it
+if(p&&RESOLVED_STATUSES.some(s=>(p.status||'').toLowerCase()===s))return false;
 return true;
 });
 // Also add corList entries from projects that have no matching standalone correction
@@ -1457,7 +1463,6 @@ if(!p.corList||!p.corList.length)return;
 if(RESOLVED_STATUSES.some(s=>(p.status||'').toLowerCase()===s))return;
 p.corList.forEach(c=>{
 if(c.status==='Resolved')return;
-// Check if already in standalone corrections
 const already=list.some(x=>parseInt(x.linkedProjectId)===p.id&&(x.corNotes||'').trim()===(c.corNotes||'').trim()&&(x.corType||'')===(c.corType||''));
 if(!already){
 list.push({id:'cl_'+p.id+'_'+(c.corType||'')+'_'+Math.random(),name:p.name,pid:p.pid,type:p.type,assignee:p.assignee,corType:c.corType,corReceived:c.corReceived,corDue:c.corDue,corNotes:c.corNotes,status:c.status||'Open',linkedProjectId:String(p.id)});
@@ -2397,23 +2402,35 @@ p.lastEditedBy=myViewerName||'Unknown';p.lastEditedAt=new Date().toISOString();
 saveProjectToSupabase(p).then(function(){save();render();showToast(toggledStatus==='Resolved'?'Marked as resolved!':'Reopened.');}).catch(function(){save();render();});
 return;
 }
-// Normalize id — HTML onclick passes strings, but stored ids may be numbers
+// Normalize id — HTML onclick passes strings, stored ids may be numbers
 const numId=parseInt(id);
 const c=corrections.find(x=>x.id===numId||x.id===id||String(x.id)===String(id));
 if(!c){showToast('Correction not found.');return;}
 c.status=c.status==='Resolved'?'Open':'Resolved';
+// Find linked project — try by linkedProjectId first, then fall back to name/pid match
+let p=null;
 if(c.linkedProjectId){
-const p=projects.find(x=>x.id===parseInt(c.linkedProjectId));
-if(p&&p.corList){
-const match=p.corList.find(x=>(x.corNotes||'').trim()===(c.corNotes||'').trim()&&(x.corType||'')===(c.corType||''));
-if(match)match.status=c.status;
+  p=projects.find(x=>x.id===parseInt(c.linkedProjectId)||String(x.id)===String(c.linkedProjectId));
+}
+// If not found by id, try matching by name or pid (handles old records with wrong linkedProjectId)
+if(!p&&c.name){
+  p=projects.find(x=>x.name===c.name&&(x.type===c.type||!c.type));
+}
+if(!p&&c.pid){
+  p=projects.find(x=>x.pid===c.pid&&(x.type===c.type||!c.type));
 }
 if(p){
-const allResolved=corrections.filter(x=>String(x.linkedProjectId)===String(c.linkedProjectId)).every(x=>x.status==='Resolved');
-if(allResolved&&p.corList){const listAllResolved=p.corList.every(x=>x.status==='Resolved');if(listAllResolved)p.hasCor=false;}
-p.lastEditedBy=myViewerName||'Unknown';p.lastEditedAt=new Date().toISOString();
-saveProjectToSupabase(p).catch(()=>{});
-}
+  // Fix linkedProjectId on the correction so future lookups work
+  if(!c.linkedProjectId||String(c.linkedProjectId)!==String(p.id)){
+    c.linkedProjectId=String(p.id);
+  }
+  if(!p.corList)p.corList=[];
+  const match=p.corList.find(x=>(x.corNotes||'').trim()===(c.corNotes||'').trim()&&(x.corType||'')===(c.corType||''));
+  if(match){match.status=c.status;}
+  const allResolved=corrections.filter(x=>String(x.linkedProjectId)===String(p.id)).every(x=>x.status==='Resolved');
+  if(allResolved&&p.corList){const listAllResolved=p.corList.every(x=>x.status==='Resolved');if(listAllResolved)p.hasCor=false;}
+  p.lastEditedBy=myViewerName||'Unknown';p.lastEditedAt=new Date().toISOString();
+  saveProjectToSupabase(p).catch(()=>{});
 }
 saveCorrectionToSupabase(c).then(function(){save();render();showToast(c.status==='Resolved'?'Marked as resolved!':'Reopened.');}).catch(function(){save();render();});
 }
