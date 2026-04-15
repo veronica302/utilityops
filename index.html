@@ -2582,10 +2582,11 @@ heartbeatTimer=setInterval(()=>{
 registerViewer();
 },HEARTBEAT_MS);
 }
-var TEAM_NAMES=['veronica','althesa ancheta','joy completo','rachel gendrano','v'];
+var TEAM_NAMES=['veronica','althesa','joy','rachel','v'];
 function checkTeamName(val){
 const v=val.trim().toLowerCase();
-const isTeam=TEAM_NAMES.some(n=>v===n||v.startsWith(n.split(' ')[0].toLowerCase())&&v.length>=1);
+if(!v){const pwSection=document.getElementById('team-pw-section');if(pwSection)pwSection.style.display='none';return;}
+const isTeam=TEAM_NAMES.some(n=>v.includes(n)||n.includes(v)&&v.length>=2);
 const pwSection=document.getElementById('team-pw-section');
 if(pwSection)pwSection.style.display=isTeam?'block':'none';
 }
@@ -2605,7 +2606,7 @@ return;
 }
 if(errEl)errEl.style.display='none';
 const pw=pwInput?pwInput.value.trim():'';
-canEdit=(pw===TEAM_PASSWORD||pw===OWNER_PIN);
+canEdit=(pw===TEAM_PASSWORD||pw.toLowerCase()===TEAM_PASSWORD.toLowerCase()||pw===OWNER_PIN);
 myViewerName=name;
 myViewerId=genId();
 document.getElementById('name-prompt-modal').style.display='none';
