@@ -1136,7 +1136,7 @@ function exportRebatePayXLS(){
   showToast('Exported!');
 }
 
-
+function resolveCorInPanel(projectId,encodedNotes,encodedType){
   projectId=parseInt(projectId)||projectId;
   var targetNotes=decodeURIComponent(encodedNotes||'');
   var targetType=decodeURIComponent(encodedType||'');
@@ -1148,7 +1148,6 @@ function exportRebatePayXLS(){
   c.status=c.status==='Resolved'?'Open':'Resolved';
   p.lastEditedBy=myViewerName||'Unknown';
   p.lastEditedAt=new Date().toISOString();
-  // Also update in standalone corrections array if exists
   const sc=corrections.find(function(x){
     return x.corNotes===c.corNotes&&x.corReceived===c.corReceived&&parseInt(x.linkedProjectId)===projectId;
   });
