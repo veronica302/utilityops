@@ -453,7 +453,7 @@ tr.dr:hover td{background:var(--bg2);cursor:pointer}
   </div>
   <!-- Rebate Payments Panel -->
   <div id="rpt-panel-rebatepay" style="display:none">
-    <div class="report-controls" style="flex-wrap:wrap;gap:10px;margin-bottom:1rem">
+    <div class="report-controls" style="flex-wrap:wrap;gap:10px;margin-bottom:0.5rem">
       <label style="font-size:13px;color:var(--text2)">From:</label>
       <input type="date" id="rebatepay-from" onchange="renderRebatePayReport()" style="font-size:13px;padding:6px 10px;border-radius:var(--r);border:0.5px solid var(--border2);background:var(--bg);color:var(--text);outline:none">
       <label style="font-size:13px;color:var(--text2)">To:</label>
@@ -466,6 +466,7 @@ tr.dr:hover td{background:var(--bg2);cursor:pointer}
       </select>
       <button class="export-btn" onclick="exportRebatePayXLS()" style="margin-left:auto">Export XLS</button>
     </div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:1rem;padding-left:2px">Filters by <strong>Payment Status Date</strong> — the date recorded when the rebate was marked as Sent for Payment, Ready For Payment, or Payment Processed</div>
     <div id="rebatepay-summary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:1rem"></div>
     <div id="rebatepay-content"></div>
   </div>
@@ -483,6 +484,21 @@ tr.dr:hover td{background:var(--bg2);cursor:pointer}
   </div>
   <div class="modal-actions">
     <button class="btn-s" onclick="confirmApprovalDate()" style="width:100%">Save Date</button>
+  </div>
+</div>
+</div>
+
+<!-- Payment Status Date Popup -->
+<div class="modal-bg" id="payment-date-modal" style="display:none">
+<div class="modal" style="max-width:360px">
+  <div class="modal-hdr"><h2>💰 Rebate Payment Status</h2></div>
+  <p style="font-size:13px;color:var(--text2);margin-bottom:1.25rem">The status was changed to <strong id="payment-status-label"></strong>. Please enter the date this status was set.</p>
+  <div class="fr">
+    <label>Payment Status Date *</label>
+    <input type="date" id="payment-date-input" style="font-size:13px;padding:7px 10px;border-radius:var(--r);border:0.5px solid var(--border2);background:var(--bg);color:var(--text);outline:none;width:100%">
+  </div>
+  <div class="modal-actions">
+    <button class="btn-s" onclick="confirmPaymentDate()" style="width:100%">Save Date</button>
   </div>
 </div>
 </div>
@@ -572,6 +588,7 @@ tr.dr:hover td{background:var(--bg2);cursor:pointer}
   <div id="coc-fields" style="display:none">
     <div class="sec-lbl">COC Details</div>
     <input type="hidden" id="f-coc-approved">
+    <input type="hidden" id="f-payment-status-date">
     <div class="fr"><label>HP Enrollment Date</label><input type="date" id="f-coc-hp-enrolled"></div>
     <div class="fr" style="flex-direction:column;gap:4px">
       <label>Linked IC Project</label>
@@ -1029,22 +1046,22 @@ function renderRebatePayReport(){
   var fromD=new Date(from);fromD.setHours(0,0,0,0);
   var toD=new Date(to);toD.setHours(23,59,59,999);
   var PAY_STATUSES=['Sent for Payment','Ready For Payment','Payment Processed'];
-  // Filter rebates: use hpEnrolled as the "submitted/processed" date proxy; fall back to received
+  // Filter rebates: use paymentStatusDate (set when status changed to a payment status)
   var rebates=projects.filter(function(p){
     if(p.type!=='Rebate')return false;
     var st=p.status||'';
     if(statusFilter!=='all'&&st!==statusFilter)return false;
     if(!PAY_STATUSES.includes(st))return false;
-    // Use hpEnrolled date (enrollment = when rebate was submitted), fallback to received
-    var d=p.hpEnrolled||p.received||'';
-    if(!d)return true; // include undated ones in "all" view
+    // Use paymentStatusDate — the date recorded when status was set to a payment status
+    var d=p.paymentStatusDate||'';
+    if(!d)return false; // exclude records with no payment status date
     var pd=new Date(d);pd.setHours(12,0,0,0);
     return pd>=fromD&&pd<=toD;
   });
   // Sort newest first
   rebates.sort(function(a,b){
-    var da=new Date(a.hpEnrolled||a.received||'2000-01-01');
-    var db=new Date(b.hpEnrolled||b.received||'2000-01-01');
+    var da=new Date(a.paymentStatusDate||'2000-01-01');
+    var db=new Date(b.paymentStatusDate||'2000-01-01');
     return db-da;
   });
   // Summary metrics
@@ -1097,17 +1114,21 @@ function renderRebatePayReport(){
     html+='<div class="report-card" style="margin-bottom:1.25rem">';
     html+='<div class="report-card-hdr" style="background:'+statusBgs[st]+';color:'+statusColors[st]+'">'+statusDot(st)+st+grpAmt+'<span style="font-weight:400;color:'+statusColors[st]+';opacity:0.8">'+list.length+' rebate'+(list.length!==1?'s':'')+'</span></div>';
     html+='<div style="overflow-x:auto"><table class="report-table"><thead><tr>';
-    html+='<th>Account</th><th>Project ID</th><th>Program</th><th>Assignee</th><th>HP Enrolled / Submitted</th><th>Amount</th><th>Notes</th>';
+    html+='<th>Account</th><th>Project ID</th><th>Program</th><th>Assignee</th><th>Payment Status Date</th><th>Submitted Date</th><th>HP Enrolled</th><th>Amount</th><th>Notes</th>';
     html+='</tr></thead><tbody>';
     list.forEach(function(p){
-      var dateVal=p.hpEnrolled||p.received||'';
+      var payDateVal=p.paymentStatusDate||'';
+      var submittedVal=p.received||'';
+      var hpVal=p.hpEnrolled||'';
       var notesSnip=(p.notes||'').slice(0,80)+(p.notes&&p.notes.length>80?'…':'');
       html+='<tr style="cursor:pointer" onclick="closeReportCombined();setTimeout(function(){showDetail('+p.id+')},100)">';
       html+='<td style="font-size:13px;font-weight:500">'+p.name+'</td>';
       html+='<td style="font-size:13px;color:var(--text2)">'+(p.pid||'—')+'</td>';
       html+='<td style="font-size:12px">'+(p.rebateProgram||p.subtype||'—')+'</td>';
       html+='<td style="font-size:13px">'+(p.assignee||'—')+'</td>';
-      html+='<td style="font-size:13px">'+fmtDate(dateVal)+'</td>';
+      html+='<td style="font-size:13px;font-weight:500;color:'+statusColors[st]+'">'+(payDateVal?fmtDate(payDateVal):'<span style="color:var(--text3);font-weight:normal">—</span>')+'</td>';
+      html+='<td style="font-size:13px">'+(submittedVal?fmtDate(submittedVal):'—')+'</td>';
+      html+='<td style="font-size:13px">'+(hpVal?fmtDate(hpVal):'—')+'</td>';
       html+='<td style="font-size:13px;font-weight:600;color:'+statusColors[st]+'">'+(p.rebateAmount?fmtAmt(p.rebateAmount):'—')+'</td>';
       html+='<td style="font-size:11px;color:var(--text2);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+notesSnip+'</td>';
       html+='</tr>';
@@ -1130,15 +1151,15 @@ function exportRebatePayXLS(){
     var st=p.status||'';
     if(statusFilter!=='all'&&st!==statusFilter)return false;
     if(!PAY_STATUSES.includes(st))return false;
-    var d=p.hpEnrolled||p.received||'';
-    if(!d)return true;
+    var d=p.paymentStatusDate||'';
+    if(!d)return false;
     var pd=new Date(d);pd.setHours(12,0,0,0);
     return pd>=fromD&&pd<=toD;
   });
-  rebates.sort(function(a,b){return new Date(b.hpEnrolled||b.received||'2000-01-01')-new Date(a.hpEnrolled||a.received||'2000-01-01');});
-  var headers=['Account','Project ID','Program','Assignee','HP Enrolled / Submitted','Status','Amount','Notes'];
+  rebates.sort(function(a,b){return new Date(b.paymentStatusDate||'2000-01-01')-new Date(a.paymentStatusDate||'2000-01-01');});
+  var headers=['Account','Project ID','Program','Assignee','Payment Status Date','Submitted Date','HP Enrolled','Status','Amount','Notes'];
   var rows=rebates.map(function(p){
-    return[p.name||'',p.pid||'',p.rebateProgram||p.subtype||'',p.assignee||'',p.hpEnrolled||p.received||'',p.status||'',parseFloat(p.rebateAmount)||'',p.notes||''];
+    return[p.name||'',p.pid||'',p.rebateProgram||p.subtype||'',p.assignee||'',p.paymentStatusDate||'',p.received||'',p.hpEnrolled||'',p.status||'',parseFloat(p.rebateAmount)||'',p.notes||''];
   });
   downloadXLS(buildXLSX([{name:'Rebate Payments',rows:[headers].concat(rows)}]),'rebate_payments_'+from+'_to_'+to+'.xls');
   showToast('Exported!');
@@ -1965,7 +1986,7 @@ if(!opts.includes(prev))sel.value=opts[0];
 }
 function toggleCorF(){document.getElementById('cor-fields').style.display=document.getElementById('f-has-cor').checked?'block':'none';}
 function clearModal(){
-['f-name','f-pid','f-address','f-received','f-deadline','f-notes','f-ubname','f-pm','f-ic-hp-link','f-ic-approved','f-coc-approved','f-coc-hp-enrolled','f-hp-enrolled','f-hp-ic-link','f-rebate-amount','f-rebate-program','f-rebate-hp-date','f-cor-due','f-cor-received','f-cor-notes','f-linked-ic-id','f-linked-ic-search','f-linked-coc-id','f-linked-coc-search'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+['f-name','f-pid','f-address','f-received','f-deadline','f-notes','f-ubname','f-pm','f-ic-hp-link','f-ic-approved','f-coc-approved','f-payment-status-date','f-coc-hp-enrolled','f-hp-enrolled','f-hp-ic-link','f-rebate-amount','f-rebate-program','f-rebate-hp-date','f-cor-due','f-cor-received','f-cor-notes','f-linked-ic-id','f-linked-ic-search','f-linked-coc-id','f-linked-coc-search'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
 document.getElementById('f-type').value='IC';document.getElementById('f-subtype').value='SFA';
 document.getElementById('f-status').value='Not yet Submitted';document.getElementById('f-assignee').value='Althesa Ancheta';
 document.getElementById('f-cor-type').value='Missing Information';
@@ -1999,6 +2020,8 @@ document.getElementById('f-pm').value=p.pmName||'';
 document.getElementById('f-ic-hp-link').value=p.icHpLink||'';
 document.getElementById('f-ic-approved').value=p.icApprovedDate||'';
 document.getElementById('f-coc-approved').value=p.cocApprovedDate||'';
+const psdEl=document.getElementById('f-payment-status-date');
+if(psdEl)psdEl.value=p.paymentStatusDate||'';
 if(p.type==='COC'){
   const cocHpEl=document.getElementById('f-coc-hp-enrolled');
   if(cocHpEl)cocHpEl.value=p.hpEnrolled||'';
@@ -2102,6 +2125,31 @@ document.getElementById('modal').style.display='flex';
 pendingApprovalSave=null;
 }
 }
+var pendingPaymentSave=null;
+function showPaymentDatePopup(statusLabel,onConfirm){
+pendingPaymentSave=onConfirm;
+document.getElementById('payment-status-label').textContent=statusLabel;
+document.getElementById('payment-date-input').value=new Date().toISOString().slice(0,10);
+document.getElementById('payment-date-modal').style.display='flex';
+setTimeout(()=>document.getElementById('payment-date-input').focus(),50);
+}
+function confirmPaymentDate(){
+const date=document.getElementById('payment-date-input').value;
+if(!date){
+document.getElementById('payment-date-input').style.borderColor='var(--dt)';
+showToast('Payment status date is required. Please enter the date.');return;
+}
+document.getElementById('f-payment-status-date').value=date;
+document.getElementById('payment-date-modal').style.display='none';
+if(pendingPaymentSave){pendingPaymentSave();pendingPaymentSave=null;}
+}
+function cancelPaymentDate(){
+document.getElementById('payment-date-modal').style.display='none';
+if(pendingPaymentSave){
+document.getElementById('modal').style.display='flex';
+pendingPaymentSave=null;
+}
+}
 function searchLinkedIC(q){
   const dd=document.getElementById('ic-link-dropdown');
   if(!q||q.length<2){dd.style.display='none';return;}
@@ -2185,6 +2233,16 @@ document.getElementById('modal').style.display='none';
 showApprovalDatePopup(t,()=>doSaveProject());
 return;
 }
+const PAY_STATUSES=['Sent for Payment','Ready For Payment','Payment Processed'];
+const isPayStatus=t==='Rebate'&&PAY_STATUSES.includes(status);
+const existingForCheck=editId?projects.find(x=>x.id===editId):null;
+const prevStatus=existingForCheck?existingForCheck.status:'';
+const needsPayDate=isPayStatus&&status!==prevStatus&&!document.getElementById('f-payment-status-date').value;
+if(needsPayDate){
+document.getElementById('modal').style.display='none';
+showPaymentDatePopup(status,()=>doSaveProject());
+return;
+}
 doSaveProject();
 }
 function doSaveProject(){
@@ -2212,7 +2270,7 @@ created:new Date().toISOString().slice(0,10)
 if(isResolved)corList=corList.map(c=>({...c,status:'Resolved'}));
 const hasCor=!isResolved&&corList.some(c=>c.status!=='Resolved');
 const latestCor=corList.filter(c=>c.status!=='Resolved').slice(-1)[0]||corList.slice(-1)[0]||{};
-const p={id:editId||nextId++,name,pid:document.getElementById('f-pid').value.trim(),address:document.getElementById('f-address').value.trim(),type:t,subtype:document.getElementById('f-subtype').value,status,assignee:document.getElementById('f-assignee').value,received:document.getElementById('f-received').value,deadline:document.getElementById('f-deadline').value,notes:document.getElementById('f-notes').value.trim(),ubName:document.getElementById('f-ubname').value.trim(),pmName:document.getElementById('f-pm').value.trim(),hasCor,corList,corType:latestCor.corType||'',corReceived:latestCor.corReceived||'',corDue:latestCor.corDue||'',corNotes:latestCor.corNotes||'',icHpLink:'',icApprovedDate:document.getElementById('f-ic-approved').value,cocApprovedDate:document.getElementById('f-coc-approved').value,linkedICProjectId:document.getElementById('f-linked-ic-id').value?parseInt(document.getElementById('f-linked-ic-id').value)||document.getElementById('f-linked-ic-id').value:'',linkedCOCProjectId:document.getElementById('f-linked-coc-id').value?parseInt(document.getElementById('f-linked-coc-id').value)||document.getElementById('f-linked-coc-id').value:'',hpEnrolled:hpDate,hpIcLink:'',hpRebateLink:'',rebateHpLink:'',rebateAmount:document.getElementById('f-rebate-amount').value,rebateProgram:document.getElementById('f-rebate-program').value.trim(),activityLog:existing?existing.activityLog||[]:[],created:existing?existing.created:new Date().toISOString().slice(0,10),updated:new Date().toISOString().slice(0,10),lastEditedBy:myViewerName||'Unknown',lastEditedAt:new Date().toISOString()};
+const p={id:editId||nextId++,name,pid:document.getElementById('f-pid').value.trim(),address:document.getElementById('f-address').value.trim(),type:t,subtype:document.getElementById('f-subtype').value,status,assignee:document.getElementById('f-assignee').value,received:document.getElementById('f-received').value,deadline:document.getElementById('f-deadline').value,notes:document.getElementById('f-notes').value.trim(),ubName:document.getElementById('f-ubname').value.trim(),pmName:document.getElementById('f-pm').value.trim(),hasCor,corList,corType:latestCor.corType||'',corReceived:latestCor.corReceived||'',corDue:latestCor.corDue||'',corNotes:latestCor.corNotes||'',icHpLink:'',icApprovedDate:document.getElementById('f-ic-approved').value,cocApprovedDate:document.getElementById('f-coc-approved').value,linkedICProjectId:document.getElementById('f-linked-ic-id').value?parseInt(document.getElementById('f-linked-ic-id').value)||document.getElementById('f-linked-ic-id').value:'',linkedCOCProjectId:document.getElementById('f-linked-coc-id').value?parseInt(document.getElementById('f-linked-coc-id').value)||document.getElementById('f-linked-coc-id').value:'',hpEnrolled:hpDate,hpIcLink:'',hpRebateLink:'',rebateHpLink:'',rebateAmount:document.getElementById('f-rebate-amount').value,rebateProgram:document.getElementById('f-rebate-program').value.trim(),paymentStatusDate:(()=>{const el=document.getElementById('f-payment-status-date');return el?el.value:'';})(),activityLog:existing?existing.activityLog||[]:[],created:existing?existing.created:new Date().toISOString().slice(0,10),updated:new Date().toISOString().slice(0,10),lastEditedBy:myViewerName||'Unknown',lastEditedAt:new Date().toISOString()};
 if(editId){const i=projects.findIndex(x=>x.id===editId);if(i>-1)projects[i]=p;}
 else projects.push(p);
 save();closeModal();render();
