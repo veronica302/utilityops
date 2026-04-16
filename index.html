@@ -572,6 +572,7 @@ tr.dr:hover td{background:var(--bg2);cursor:pointer}
   <div id="coc-fields" style="display:none">
     <div class="sec-lbl">COC Details</div>
     <input type="hidden" id="f-coc-approved">
+    <div class="fr"><label>HP Enrollment Date</label><input type="date" id="f-coc-hp-enrolled"></div>
     <div class="fr" style="flex-direction:column;gap:4px">
       <label>Linked IC Project</label>
       <div style="position:relative">
@@ -1964,7 +1965,7 @@ if(!opts.includes(prev))sel.value=opts[0];
 }
 function toggleCorF(){document.getElementById('cor-fields').style.display=document.getElementById('f-has-cor').checked?'block':'none';}
 function clearModal(){
-['f-name','f-pid','f-address','f-received','f-deadline','f-notes','f-ubname','f-pm','f-ic-hp-link','f-ic-approved','f-coc-approved','f-hp-enrolled','f-hp-ic-link','f-rebate-amount','f-rebate-program','f-rebate-hp-date','f-cor-due','f-cor-received','f-cor-notes','f-linked-ic-id','f-linked-ic-search','f-linked-coc-id','f-linked-coc-search'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+['f-name','f-pid','f-address','f-received','f-deadline','f-notes','f-ubname','f-pm','f-ic-hp-link','f-ic-approved','f-coc-approved','f-coc-hp-enrolled','f-hp-enrolled','f-hp-ic-link','f-rebate-amount','f-rebate-program','f-rebate-hp-date','f-cor-due','f-cor-received','f-cor-notes','f-linked-ic-id','f-linked-ic-search','f-linked-coc-id','f-linked-coc-search'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
 document.getElementById('f-type').value='IC';document.getElementById('f-subtype').value='SFA';
 document.getElementById('f-status').value='Not yet Submitted';document.getElementById('f-assignee').value='Althesa Ancheta';
 document.getElementById('f-cor-type').value='Missing Information';
@@ -1999,6 +2000,8 @@ document.getElementById('f-ic-hp-link').value=p.icHpLink||'';
 document.getElementById('f-ic-approved').value=p.icApprovedDate||'';
 document.getElementById('f-coc-approved').value=p.cocApprovedDate||'';
 if(p.type==='COC'){
+  const cocHpEl=document.getElementById('f-coc-hp-enrolled');
+  if(cocHpEl)cocHpEl.value=p.hpEnrolled||'';
   clearLinkedIC();
   if(p.linkedICProjectId){
     const linkedIC=projects.find(x=>x.id===parseInt(p.linkedICProjectId));
@@ -2192,7 +2195,7 @@ const status=document.getElementById('f-status').value;
 const RESOLVED=['approved','payment processed','sent for payment','ready for payment','enrolled'];
 const isResolved=RESOLVED.some(s=>status.toLowerCase()===s);
 const hpEnrollDate=document.getElementById('f-ic-hp-link')?document.getElementById('f-ic-hp-link').value:'';
-const hpDate=t==='HP'?document.getElementById('f-hp-enrolled').value:t==='Rebate'?document.getElementById('f-rebate-hp-date').value:hpEnrollDate;
+const hpDate=t==='HP'?document.getElementById('f-hp-enrolled').value:t==='Rebate'?document.getElementById('f-rebate-hp-date').value:t==='COC'?document.getElementById('f-coc-hp-enrolled').value:hpEnrollDate;
 const existing=editId?projects.find(x=>x.id===editId):null;
 let corList=existing&&existing.corList?[...existing.corList]:
 (existing&&existing.corNotes?[{corType:existing.corType,corReceived:existing.corReceived,corDue:existing.corDue,corNotes:existing.corNotes,status:'Open',created:existing.created}]:[]);
