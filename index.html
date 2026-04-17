@@ -791,10 +791,27 @@ async function loadFromSupabase() {
     const pRows = await sbFetch('/rest/v1/projects?select=id,data&order=id.asc&limit=2000');
     if (pRows && pRows.length > 0) {
       projects = pRows.map(r => r.data);
-    } else {
-      // First time - seed from IMPORTED
-      projects = IMPORTED.map(p => ({...p, activityLog: p.activityLog||[], cocApprovedDate: p.cocApprovedDate||''}));
-      await saveAllProjectsToSupabase();
+    } else if (pRows && pRows.length === 0) {
+      // Supabase returned empty — ONLY seed if this is truly a first-time setup
+      // (i.e., no projects at all in the DB). Use IMPORTED as initial seed.
+      // IMPORTANT: We add a safety check — ask Supabase again to confirm truly empty
+      // before seeding, to prevent accidental data wipe on network glitch.
+      await new Promise(res => setTimeout(res, 2000)); // Wait 2s before retry
+      const confirmRows = await sbFetch('/rest/v1/projects?select=id&limit=1');
+      if (confirmRows && confirmRows.length === 0) {
+        // Confirmed empty — safe to seed
+        projects = IMPORTED.map(p => ({...p, activityLog: p.activityLog||[], cocApprovedDate: p.cocApprovedDate||''}));
+        await saveAllProjectsToSupabase();
+        showToast('First-time setup: data seeded to cloud.');
+      } else if (confirmRows && confirmRows.length > 0) {
+        // DB has data now — fetch it properly
+        const freshRows = await sbFetch('/rest/v1/projects?select=id,data&order=id.asc&limit=2000');
+        projects = freshRows ? freshRows.map(r => r.data) : IMPORTED.map(p => ({...p, activityLog: p.activityLog||[], cocApprovedDate: p.cocApprovedDate||''}));
+      } else {
+        // Network issue — do NOT overwrite with IMPORTED. Keep whatever we had.
+        showToast('⚠️ Could not verify cloud data. Retrying...');
+        throw new Error('Could not confirm Supabase state');
+      }
     }
     // Load corrections
     const cRows = await sbFetch('/rest/v1/corrections?select=id,data&order=id.asc&limit=5000');
@@ -807,15 +824,32 @@ async function loadFromSupabase() {
       if (nextIdRow) nextId = parseInt(nextIdRow.value);
       if (nextCorIdRow) nextCorId = parseInt(nextCorIdRow.value);
     }
-    showToast('Data loaded - ' + projects.length + ' projects');
+    showToast('✅ Data loaded — ' + projects.length + ' projects');
     await cleanupDuplicateCorrections();
     render();
     updateMetrics();
   } catch(e) {
     console.error('Load error:', e);
-    showToast('Error loading data. Using local data.');
-    seedData();
-    render();
+    showToast('⚠️ Cloud load failed. Retrying in 5s...');
+    // CRITICAL: Do NOT call seedData() here — that would overwrite Supabase with old hardcoded data.
+    // Instead, retry once after 5 seconds.
+    setTimeout(async () => {
+      try {
+        const retryRows = await sbFetch('/rest/v1/projects?select=id,data&order=id.asc&limit=2000');
+        if (retryRows && retryRows.length > 0) {
+          projects = retryRows.map(r => r.data);
+          const cRetry = await sbFetch('/rest/v1/corrections?select=id,data&order=id.asc&limit=5000');
+          corrections = cRetry ? cRetry.map(r => r.data) : [];
+          showToast('✅ Data loaded on retry — ' + projects.length + ' projects');
+          render();
+          updateMetrics();
+        } else {
+          showToast('❌ Could not load cloud data. Check your connection and refresh.');
+        }
+      } catch(e2) {
+        showToast('❌ Cloud load failed. Please refresh the page.');
+      }
+    }, 5000);
   }
 }
 
@@ -1310,7 +1344,7 @@ projects=IMPORTED.map(p=>({...p,activityLog:p.activityLog||[],cocApprovedDate:p.
 corrections=[];
 save();
 }
-function save(){try{localStorage.setItem(SK,JSON.stringify({projects,corrections,nextId,nextCorId}));}catch(e){showToast('Storage full — export first.');}window._lastSaveTime=Date.now();saveSettingsToSupabase().catch(()=>{});}
+function save(){try{localStorage.setItem(SK,JSON.stringify({projects,corrections,nextId,nextCorId}));}catch(e){/* storage full, not critical */}window._lastSaveTime=Date.now();saveSettingsToSupabase().catch(()=>{});}
 function businessDaysSince(s){
 if(!s)return null;
 const start=new Date(s);start.setHours(0,0,0,0);
@@ -2280,7 +2314,7 @@ if(editId){const i=projects.findIndex(x=>x.id===editId);if(i>-1)projects[i]=p;}
 else projects.push(p);
 window._lastSaveTime = Date.now(); // Set IMMEDIATELY before async save to protect against poll overwrite
 save();closeModal();render();
-saveProjectToSupabase(p).catch((err)=>{
+saveProjectToSupabase(p).then(()=>{ showToast('✅ Project saved to cloud.'); }).catch((err)=>{
   console.error('Supabase save failed:',err);
   showToast('⚠️ Saved locally but cloud sync failed. Retrying...',4000);
   // Retry once after 5 seconds
