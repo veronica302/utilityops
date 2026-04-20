@@ -917,14 +917,15 @@ function startPolling() {
   if (pollTimer) clearInterval(pollTimer);
   pollTimer = setInterval(async () => {
     try {
-      // Skip poll if we saved within the last 90 seconds to avoid overwriting local changes
-      if(window._lastSaveTime && Date.now() - window._lastSaveTime < 90000) return;
+      // Skip poll if we saved within the last 3 minutes to avoid overwriting local changes
+      if(window._lastSaveTime && Date.now() - window._lastSaveTime < 180000) return;
       const pRows = await sbFetch('/rest/v1/projects?select=id,data&order=id.asc&limit=2000');
       if (pRows) {
-        // Smart merge: keep any local projects not yet confirmed in Supabase
-        // Use string comparison to avoid number/string ID type mismatch
+        // Smart merge: prefer remote data, but keep local-only projects not yet in Supabase
+        // Deduplicate by id — remote wins for shared ids, local-only kept for new ones
         const remoteIds = new Set(pRows.map(r => String(r.data.id)));
         const localOnly = projects.filter(p => !remoteIds.has(String(p.id)));
+        // Build final list with no duplicates: remote first, then local-only
         projects = pRows.map(r => r.data).concat(localOnly);
         const cRows = await sbFetch('/rest/v1/corrections?select=id,data&order=id.asc&limit=5000');
         if (cRows) {
@@ -2312,14 +2313,18 @@ const latestCor=corList.filter(c=>c.status!=='Resolved').slice(-1)[0]||corList.s
 const p={id:editId||nextId++,name,pid:document.getElementById('f-pid').value.trim(),address:document.getElementById('f-address').value.trim(),type:t,subtype:document.getElementById('f-subtype').value,status,assignee:document.getElementById('f-assignee').value,received:document.getElementById('f-received').value,deadline:document.getElementById('f-deadline').value,notes:document.getElementById('f-notes').value.trim(),ubName:document.getElementById('f-ubname').value.trim(),pmName:document.getElementById('f-pm').value.trim(),hasCor,corList,corType:latestCor.corType||'',corReceived:latestCor.corReceived||'',corDue:latestCor.corDue||'',corNotes:latestCor.corNotes||'',icHpLink:'',icApprovedDate:document.getElementById('f-ic-approved').value,cocApprovedDate:document.getElementById('f-coc-approved').value,linkedICProjectId:document.getElementById('f-linked-ic-id').value?parseInt(document.getElementById('f-linked-ic-id').value)||document.getElementById('f-linked-ic-id').value:'',linkedCOCProjectId:document.getElementById('f-linked-coc-id').value?parseInt(document.getElementById('f-linked-coc-id').value)||document.getElementById('f-linked-coc-id').value:'',hpEnrolled:hpDate,hpIcLink:'',hpRebateLink:'',rebateHpLink:'',rebateAmount:document.getElementById('f-rebate-amount').value,rebateProgram:document.getElementById('f-rebate-program').value.trim(),paymentStatusDate:(()=>{const el=document.getElementById('f-payment-status-date');return el?el.value:'';})(),activityLog:existing?existing.activityLog||[]:[],created:existing?existing.created:new Date().toISOString().slice(0,10),updated:new Date().toISOString().slice(0,10),lastEditedBy:myViewerName||'Unknown',lastEditedAt:new Date().toISOString()};
 if(editId){const i=projects.findIndex(x=>x.id===editId);if(i>-1)projects[i]=p;}
 else projects.push(p);
-window._lastSaveTime = Date.now(); // Set IMMEDIATELY before async save to protect against poll overwrite
+window._lastSaveTime = Date.now() + 180000; // Block poll for 3 min BEFORE async save
 save();closeModal();render();
-saveProjectToSupabase(p).then(()=>{ showToast('✅ Project saved to cloud.'); }).catch((err)=>{
+saveProjectToSupabase(p).then(()=>{
+  window._lastSaveTime = Date.now(); // Reset to "just saved" after confirmed cloud save
+  showToast('✅ Project saved to cloud.');
+}).catch((err)=>{
   console.error('Supabase save failed:',err);
   showToast('⚠️ Saved locally but cloud sync failed. Retrying...',4000);
   // Retry once after 5 seconds
   setTimeout(()=>{
     saveProjectToSupabase(p).then(()=>{
+      window._lastSaveTime = Date.now();
       showToast('✅ Cloud sync recovered successfully.');
     }).catch(()=>{
       showToast('❌ Cloud sync failed twice. Please keep this tab open or re-save the project.',8000);
@@ -2580,7 +2585,7 @@ document.getElementById('note-text').value='';save();showDetail(detailId);
 }
 function showDetail(id){
 id=parseInt(id)||id;
-const p=projects.find(x=>x.id===id);if(!p)return;
+const p=projects.find(x=>String(x.id)===String(id));if(!p)return;
 detailId=id;
 let hpSec='',rebSec='',corSec='',icSec='',cocSec='';
 const days=p.hpEnrolled?daysSince(p.hpEnrolled):null;
