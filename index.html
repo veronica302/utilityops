@@ -783,79 +783,109 @@ async function sbFetch(path, options={}) {
   return text ? JSON.parse(text) : null;
 }
 
-// Load all data from Supabase
-async function loadFromSupabase() {
+// ─── SAVE GUARD ────────────────────────────────────────────────────────────────
+// Any write operation calls lockPoll() first. The poll will NEVER run while
+// a save is in flight or within POLL_LOCK_MS after the last confirmed save.
+const POLL_LOCK_MS = 300000; // 5 minutes
+window._pollLockedUntil = 0;
+function lockPoll() {
+  window._pollLockedUntil = Date.now() + POLL_LOCK_MS;
+}
+function pollIsLocked() {
+  return Date.now() < window._pollLockedUntil;
+}
+
+// ─── LOCAL STORAGE CACHE ───────────────────────────────────────────────────────
+// Always write to localStorage on every change. Used as fallback if Supabase
+// fails to load, so no data is ever lost on refresh.
+function saveLocal() {
   try {
-    showToast('Loading data...');
-    // Load projects
-    const pRows = await sbFetch('/rest/v1/projects?select=id,data&order=id.asc&limit=2000');
-    if (pRows && pRows.length > 0) {
-      projects = pRows.map(r => r.data);
-    } else if (pRows && pRows.length === 0) {
-      // Supabase returned empty — ONLY seed if this is truly a first-time setup
-      // (i.e., no projects at all in the DB). Use IMPORTED as initial seed.
-      // IMPORTANT: We add a safety check — ask Supabase again to confirm truly empty
-      // before seeding, to prevent accidental data wipe on network glitch.
-      await new Promise(res => setTimeout(res, 2000)); // Wait 2s before retry
-      const confirmRows = await sbFetch('/rest/v1/projects?select=id&limit=1');
-      if (confirmRows && confirmRows.length === 0) {
-        // Confirmed empty — safe to seed
-        projects = IMPORTED.map(p => ({...p, activityLog: p.activityLog||[], cocApprovedDate: p.cocApprovedDate||''}));
-        await saveAllProjectsToSupabase();
-        showToast('First-time setup: data seeded to cloud.');
-      } else if (confirmRows && confirmRows.length > 0) {
-        // DB has data now — fetch it properly
-        const freshRows = await sbFetch('/rest/v1/projects?select=id,data&order=id.asc&limit=2000');
-        projects = freshRows ? freshRows.map(r => r.data) : IMPORTED.map(p => ({...p, activityLog: p.activityLog||[], cocApprovedDate: p.cocApprovedDate||''}));
-      } else {
-        // Network issue — do NOT overwrite with IMPORTED. Keep whatever we had.
-        showToast('⚠️ Could not verify cloud data. Retrying...');
-        throw new Error('Could not confirm Supabase state');
-      }
-    }
-    // Load corrections
-    const cRows = await sbFetch('/rest/v1/corrections?select=id,data&order=id.asc&limit=5000');
-    corrections = cRows ? cRows.map(r => r.data) : [];
-    // Load settings
-    const sRows = await sbFetch('/rest/v1/settings?select=key,value');
-    if (sRows) {
-      const nextIdRow = sRows.find(r => r.key === 'nextId');
-      const nextCorIdRow = sRows.find(r => r.key === 'nextCorId');
-      if (nextIdRow) nextId = parseInt(nextIdRow.value);
-      if (nextCorIdRow) nextCorId = parseInt(nextCorIdRow.value);
-    }
-    showToast('✅ Data loaded — ' + projects.length + ' projects');
-    await cleanupDuplicateCorrections();
+    localStorage.setItem(SK, JSON.stringify({projects, corrections, nextId, nextCorId, savedAt: Date.now()}));
+  } catch(e) { /* storage full — not critical */ }
+}
+function loadLocal() {
+  try {
+    const raw = localStorage.getItem(SK);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch(e) { return null; }
+}
+
+// ─── LOAD ──────────────────────────────────────────────────────────────────────
+async function loadFromSupabase() {
+  // Step 1: Immediately show whatever is in localStorage so the UI is never blank
+  const local = loadLocal();
+  if (local && local.projects && local.projects.length > 0) {
+    projects = local.projects;
+    corrections = local.corrections || [];
+    nextId = local.nextId || nextId;
+    nextCorId = local.nextCorId || nextCorId;
     render();
     updateMetrics();
-  } catch(e) {
-    console.error('Load error:', e);
-    showToast('⚠️ Cloud load failed. Retrying in 5s...');
-    // CRITICAL: Do NOT call seedData() here — that would overwrite Supabase with old hardcoded data.
-    // Instead, retry once after 5 seconds.
-    setTimeout(async () => {
-      try {
-        const retryRows = await sbFetch('/rest/v1/projects?select=id,data&order=id.asc&limit=2000');
-        if (retryRows && retryRows.length > 0) {
-          projects = retryRows.map(r => r.data);
-          const cRetry = await sbFetch('/rest/v1/corrections?select=id,data&order=id.asc&limit=5000');
-          corrections = cRetry ? cRetry.map(r => r.data) : [];
-          showToast('✅ Data loaded on retry — ' + projects.length + ' projects');
-          render();
-          updateMetrics();
-        } else {
-          showToast('❌ Could not load cloud data. Check your connection and refresh.');
+    showToast('Loading latest data from cloud...');
+  }
+
+  // Step 2: Fetch from Supabase and merge
+  let retries = 0;
+  while (retries < 3) {
+    try {
+      const pRows = await sbFetch('/rest/v1/projects?select=id,data&order=id.asc&limit=2000');
+      if (pRows && pRows.length > 0) {
+        // Merge: remote is source of truth, but keep any local-only unsaved projects
+        const remoteIds = new Set(pRows.map(r => String(r.data.id)));
+        const localOnly = projects.filter(p => !remoteIds.has(String(p.id)));
+        projects = pRows.map(r => r.data).concat(localOnly);
+      } else if (pRows && pRows.length === 0) {
+        // Truly empty DB — only seed if local is also empty
+        if (!local || !local.projects || local.projects.length === 0) {
+          projects = IMPORTED.map(p => ({...p, activityLog: p.activityLog||[], cocApprovedDate: p.cocApprovedDate||''}));
+          lockPoll();
+          saveLocal();
+          await saveAllProjectsToSupabase();
+          showToast('First-time setup complete.');
         }
-      } catch(e2) {
-        showToast('❌ Cloud load failed. Please refresh the page.');
+        // else: keep local data — Supabase may just be lagging
       }
-    }, 5000);
+
+      const cRows = await sbFetch('/rest/v1/corrections?select=id,data&order=id.asc&limit=5000');
+      if (cRows) {
+        const remoteCorIds = new Set(cRows.map(r => String(r.data.id)));
+        const localOnlyCors = corrections.filter(c => !remoteCorIds.has(String(c.id)));
+        corrections = cRows.map(r => r.data).concat(localOnlyCors);
+      }
+
+      const sRows = await sbFetch('/rest/v1/settings?select=key,value');
+      if (sRows) {
+        const nextIdRow = sRows.find(r => r.key === 'nextId');
+        const nextCorIdRow = sRows.find(r => r.key === 'nextCorId');
+        if (nextIdRow && parseInt(nextIdRow.value) > nextId) nextId = parseInt(nextIdRow.value);
+        if (nextCorIdRow && parseInt(nextCorIdRow.value) > nextCorId) nextCorId = parseInt(nextCorIdRow.value);
+      }
+
+      saveLocal(); // Cache the freshly loaded data
+      showToast('✅ Data loaded — ' + projects.length + ' projects');
+      await cleanupDuplicateCorrections();
+      render();
+      updateMetrics();
+      return; // success
+    } catch(e) {
+      retries++;
+      console.error('Load attempt ' + retries + ' failed:', e);
+      if (retries < 3) {
+        showToast('⚠️ Cloud load failed, retrying... (' + retries + '/3)');
+        await new Promise(res => setTimeout(res, 3000 * retries));
+      } else {
+        showToast('⚠️ Could not reach cloud. Showing locally cached data.');
+        // Local data was already loaded in Step 1 — just render it
+        render();
+        updateMetrics();
+      }
+    }
   }
 }
 
 async function saveAllProjectsToSupabase() {
   const rows = projects.map(p => ({id: p.id, data: p}));
-  // Upsert in batches of 100
   for (let i = 0; i < rows.length; i += 100) {
     const batch = rows.slice(i, i + 100);
     await sbFetch('/rest/v1/projects', {
@@ -867,18 +897,16 @@ async function saveAllProjectsToSupabase() {
 }
 
 async function saveProjectToSupabase(p) {
-  window._lastSaveTime = Date.now(); // Also set here as backup
   const result = await sbFetch('/rest/v1/projects', {
     method: 'POST',
     prefer: 'resolution=merge-duplicates',
     body: JSON.stringify({id: p.id, data: p})
   });
-  console.log('Saved project '+p.id+' to Supabase, corList length: '+(p.corList?p.corList.length:0));
+  console.log('Saved project ' + p.id + ' to Supabase');
   return result;
 }
 
 async function saveCorrectionToSupabase(c) {
-  window._lastSaveTime = Date.now();
   await sbFetch('/rest/v1/corrections', {
     method: 'POST',
     prefer: 'resolution=merge-duplicates',
@@ -887,13 +915,11 @@ async function saveCorrectionToSupabase(c) {
 }
 
 async function deleteCorrectionFromSupabase(id) {
-  window._lastSaveTime = Date.now();
   await sbFetch('/rest/v1/corrections?id=eq.' + id, {method: 'DELETE'});
 }
 
 async function deleteProjectFromSupabase(id) {
   await sbFetch('/rest/v1/projects?id=eq.' + id, {method: 'DELETE'});
-  // Also delete linked corrections
   const linked = corrections.filter(c => c.linkedProjectId && parseInt(c.linkedProjectId) === id);
   for (const c of linked) {
     await sbFetch('/rest/v1/corrections?id=eq.' + c.id, {method: 'DELETE'});
@@ -911,21 +937,21 @@ async function saveSettingsToSupabase() {
   });
 }
 
-// Poll for changes every 10 seconds
+// ─── POLL ──────────────────────────────────────────────────────────────────────
+// Poll every 30s (reduced from 10s — less chance of race conditions).
+// NEVER runs while poll is locked (i.e., within 5 min of any save).
+// NEVER runs while the tab is hidden (user switched away).
 let pollTimer = null;
 function startPolling() {
   if (pollTimer) clearInterval(pollTimer);
   pollTimer = setInterval(async () => {
     try {
-      // Skip poll if we saved within the last 3 minutes to avoid overwriting local changes
-      if(window._lastSaveTime && Date.now() - window._lastSaveTime < 180000) return;
+      if (pollIsLocked()) return;
+      if (document.hidden) return; // Don't poll when tab is in background
       const pRows = await sbFetch('/rest/v1/projects?select=id,data&order=id.asc&limit=2000');
-      if (pRows) {
-        // Smart merge: prefer remote data, but keep local-only projects not yet in Supabase
-        // Deduplicate by id — remote wins for shared ids, local-only kept for new ones
+      if (pRows && pRows.length > 0) {
         const remoteIds = new Set(pRows.map(r => String(r.data.id)));
         const localOnly = projects.filter(p => !remoteIds.has(String(p.id)));
-        // Build final list with no duplicates: remote first, then local-only
         projects = pRows.map(r => r.data).concat(localOnly);
         const cRows = await sbFetch('/rest/v1/corrections?select=id,data&order=id.asc&limit=5000');
         if (cRows) {
@@ -933,13 +959,13 @@ function startPolling() {
           const localOnlyCors = corrections.filter(c => !remoteCorIds.has(String(c.id)));
           corrections = cRows.map(r => r.data).concat(localOnlyCors);
         }
+        saveLocal();
         render();
         updateMetrics();
       }
-      // Also refresh viewer count from Supabase
       await loadViewersFromSupabase();
     } catch(e) { /* silent poll failure */ }
-  }, 10000);
+  }, 30000);
 }
 
 
@@ -1218,9 +1244,9 @@ function resolveCorInPanel(projectId, corIndex){
     sc.status=c.status;
     saveCorrectionToSupabase(sc).catch(()=>{});
   }
-  window._lastSaveTime=Date.now();
+  window._pollLockedUntil = Date.now() + 300000;
   saveProjectToSupabase(p).then(function(){
-    save();showDetail(projectId);render();
+    lockPoll();save();showDetail(projectId);render();
     showToast(c.status==='Resolved'?'Marked as resolved!':'Reopened.');
   }).catch(function(){save();showDetail(projectId);render();});
 }
@@ -1305,7 +1331,7 @@ function deleteCorInPanel(projectId, corIndex, encodedNotes, encodedType){
     targetType=decodeURIComponent(encodedType||'');
   }
   showDeleteConfirm('this correction',function(){
-    window._lastSaveTime=Date.now()+30000; // block poll for 30s
+    lockPoll();
     if(!p.corList)p.corList=[];
     // Remove from corList
     var before=p.corList.length;
@@ -1345,7 +1371,7 @@ projects=IMPORTED.map(p=>({...p,activityLog:p.activityLog||[],cocApprovedDate:p.
 corrections=[];
 save();
 }
-function save(){try{localStorage.setItem(SK,JSON.stringify({projects,corrections,nextId,nextCorId}));}catch(e){/* storage full, not critical */}window._lastSaveTime=Date.now();saveSettingsToSupabase().catch(()=>{});}
+function save(){lockPoll();saveLocal();saveSettingsToSupabase().catch(()=>{});}
 function businessDaysSince(s){
 if(!s)return null;
 const start=new Date(s);start.setHours(0,0,0,0);
@@ -2313,21 +2339,20 @@ const latestCor=corList.filter(c=>c.status!=='Resolved').slice(-1)[0]||corList.s
 const p={id:editId||nextId++,name,pid:document.getElementById('f-pid').value.trim(),address:document.getElementById('f-address').value.trim(),type:t,subtype:document.getElementById('f-subtype').value,status,assignee:document.getElementById('f-assignee').value,received:document.getElementById('f-received').value,deadline:document.getElementById('f-deadline').value,notes:document.getElementById('f-notes').value.trim(),ubName:document.getElementById('f-ubname').value.trim(),pmName:document.getElementById('f-pm').value.trim(),hasCor,corList,corType:latestCor.corType||'',corReceived:latestCor.corReceived||'',corDue:latestCor.corDue||'',corNotes:latestCor.corNotes||'',icHpLink:'',icApprovedDate:document.getElementById('f-ic-approved').value,cocApprovedDate:document.getElementById('f-coc-approved').value,linkedICProjectId:document.getElementById('f-linked-ic-id').value?parseInt(document.getElementById('f-linked-ic-id').value)||document.getElementById('f-linked-ic-id').value:'',linkedCOCProjectId:document.getElementById('f-linked-coc-id').value?parseInt(document.getElementById('f-linked-coc-id').value)||document.getElementById('f-linked-coc-id').value:'',hpEnrolled:hpDate,hpIcLink:'',hpRebateLink:'',rebateHpLink:'',rebateAmount:document.getElementById('f-rebate-amount').value,rebateProgram:document.getElementById('f-rebate-program').value.trim(),paymentStatusDate:(()=>{const el=document.getElementById('f-payment-status-date');return el?el.value:'';})(),activityLog:existing?existing.activityLog||[]:[],created:existing?existing.created:new Date().toISOString().slice(0,10),updated:new Date().toISOString().slice(0,10),lastEditedBy:myViewerName||'Unknown',lastEditedAt:new Date().toISOString()};
 if(editId){const i=projects.findIndex(x=>x.id===editId);if(i>-1)projects[i]=p;}
 else projects.push(p);
-window._lastSaveTime = Date.now() + 180000; // Block poll for 3 min BEFORE async save
+window._pollLockedUntil = Date.now() + 300000; // Lock poll for 5 min immediately (before any async)
 save();closeModal();render();
 saveProjectToSupabase(p).then(()=>{
-  window._lastSaveTime = Date.now(); // Reset to "just saved" after confirmed cloud save
+  lockPoll(); // Reset the 5-min window from time of confirmed cloud save
   showToast('✅ Project saved to cloud.');
 }).catch((err)=>{
   console.error('Supabase save failed:',err);
   showToast('⚠️ Saved locally but cloud sync failed. Retrying...',4000);
-  // Retry once after 5 seconds
   setTimeout(()=>{
     saveProjectToSupabase(p).then(()=>{
-      window._lastSaveTime = Date.now();
+      lockPoll();
       showToast('✅ Cloud sync recovered successfully.');
     }).catch(()=>{
-      showToast('❌ Cloud sync failed twice. Please keep this tab open or re-save the project.',8000);
+      showToast('❌ Cloud sync failed twice. Your data is saved locally — please keep this tab open.',8000);
     });
   }, 5000);
 });
@@ -2572,16 +2597,16 @@ saveCorrectionToSupabase(c).then(function(){save();render();showToast(c.status==
 }
 function saveNote(){
 const text=document.getElementById('note-text').value.trim();if(!text)return;
-const p=projects.find(x=>x.id===detailId);if(!p)return;
+const p=projects.find(x=>String(x.id)===String(detailId));if(!p)return;
 if(!p.activityLog)p.activityLog=[];
-// Use the logged-in viewer's name as the author
 const authorName=myViewerName||document.getElementById('note-author').value;
 if(!authorName){showToast('Please enter your name first.');return;}
 p.activityLog.push({text,author:authorName,ts:new Date().toISOString()});
 p.lastEditedBy=authorName;p.lastEditedAt=new Date().toISOString();
-window._lastSaveTime=Date.now();
-saveProjectToSupabase(p).catch(()=>{});
-document.getElementById('note-text').value='';save();showDetail(detailId);
+lockPoll();
+save();
+saveProjectToSupabase(p).then(()=>lockPoll()).catch(()=>{});
+document.getElementById('note-text').value='';showDetail(detailId);
 }
 function showDetail(id){
 id=parseInt(id)||id;
