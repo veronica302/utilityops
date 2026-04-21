@@ -306,6 +306,11 @@ tr.dr:hover td{background:var(--bg2);cursor:pointer}
     <div class="metric-value mv-p" id="m-cor">0</div>
     <div class="metric-hint">click to filter</div>
   </div>
+  <div class="metric metric-btn" onclick="clickMetric('hp45')" title="Projects enrolled to Hourly Pricing for 45+ days — need follow-up">
+    <div class="metric-label">HP 45+ Days <span style="font-size:9px;color:var(--text3)">follow-up</span></div>
+    <div class="metric-value mv-d" id="m-hp45">0</div>
+    <div class="metric-hint">click to filter</div>
+  </div>
 </div>
 
 <div id="alerts"></div>
@@ -331,6 +336,7 @@ tr.dr:hover td{background:var(--bg2);cursor:pointer}
   <button class="filter-btn" onclick="setFilter('joy',this)">Joy</button>
   <button class="filter-btn" onclick="setFilter('althesa',this)">Althesa</button>
   <button class="filter-btn" onclick="setFilter('rachel',this)">Rachel</button>
+  <button class="filter-btn" id="hp45-filter-btn" onclick="setFilter('hp45',this)" style="background:var(--dbg);color:var(--dt);border-color:var(--db)">⏰ HP 45+ Days</button>
   <select class="ctrl-select" id="status-filter" onchange="setStatusFilter(this.value)" style="display:none">
     <option value="">All statuses</option>
   </select>
@@ -390,6 +396,7 @@ tr.dr:hover td{background:var(--bg2);cursor:pointer}
     <button id="rpt-tab-monthly" onclick="switchReportTab('monthly')" style="font-size:13px;padding:8px 20px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--text2);cursor:pointer">Monthly Summary</button>
     <button id="rpt-tab-corrections" onclick="switchReportTab('corrections')" style="font-size:13px;padding:8px 20px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--text2);cursor:pointer">Corrections</button>
     <button id="rpt-tab-rebatepay" onclick="switchReportTab('rebatepay')" style="font-size:13px;padding:8px 20px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--st);cursor:pointer;font-weight:500">💰 Rebate Payments</button>
+    <button id="rpt-tab-hp45" onclick="switchReportTab('hp45')" style="font-size:13px;padding:8px 20px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--dt);cursor:pointer;font-weight:500">⏰ HP Follow-Up</button>
   </div>
 
   <!-- Date Range (Weekly) Panel -->
@@ -469,6 +476,36 @@ tr.dr:hover td{background:var(--bg2);cursor:pointer}
     <div style="font-size:11px;color:var(--text3);margin-bottom:1rem;padding-left:2px">Filters by <strong>Payment Status Date</strong> — the date recorded when the rebate was marked as Sent for Payment, Ready For Payment, or Payment Processed</div>
     <div id="rebatepay-summary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:1rem"></div>
     <div id="rebatepay-content"></div>
+  </div>
+  <!-- HP Follow-Up Panel -->
+  <div id="rpt-panel-hp45" style="display:none">
+    <div style="background:var(--dbg);border:0.5px solid var(--db);border-radius:var(--r);padding:10px 14px;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+      <div>
+        <div style="font-size:13px;font-weight:700;color:var(--dt);text-transform:uppercase;letter-spacing:.04em">⏰ HP Hourly Pricing Follow-Up List</div>
+        <div style="font-size:12px;color:var(--dt);margin-top:2px;opacity:.8">Projects enrolled to Hourly Pricing for more than 45 days — review and follow up</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <div style="text-align:center">
+          <div style="font-size:28px;font-weight:700;color:var(--dt)" id="hp45-rpt-count">0</div>
+          <div style="font-size:10px;color:var(--dt);opacity:.7;text-transform:uppercase;letter-spacing:.04em">Projects</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <select id="hp45-rpt-assignee" onchange="renderHP45Report()" style="font-size:13px;padding:6px 10px;border-radius:var(--r);border:0.5px solid var(--db);background:var(--dbg);color:var(--dt);outline:none">
+            <option value="all">All Assignees</option>
+            <option value="Joy">Joy</option>
+            <option value="Althesa">Althesa</option>
+            <option value="Rachel">Rachel</option>
+          </select>
+          <select id="hp45-rpt-threshold" onchange="renderHP45Report()" style="font-size:13px;padding:6px 10px;border-radius:var(--r);border:0.5px solid var(--db);background:var(--dbg);color:var(--dt);outline:none">
+            <option value="45">45+ days</option>
+            <option value="60">60+ days</option>
+            <option value="90">90+ days</option>
+          </select>
+        </div>
+        <button class="export-btn" onclick="exportHP45XLS()" style="border-color:var(--db);color:var(--dt)">Export XLS</button>
+      </div>
+    </div>
+    <div id="hp45-rpt-content"></div>
   </div>
 </div>
 </div>
@@ -1575,6 +1612,7 @@ if(filterType==='corrections')list=list.filter(p=>needsAttention(p));
 if(filterType==='joy')list=list.filter(p=>(p.assignee||'').toLowerCase().includes('joy'));
 if(filterType==='althesa')list=list.filter(p=>(p.assignee||'').toLowerCase().includes('althesa'));
 if(filterType==='rachel')list=list.filter(p=>(p.assignee||'').toLowerCase().includes('rachel'));
+if(filterType==='hp45')list=list.filter(p=>p.hpEnrolled&&daysSince(p.hpEnrolled)>=45);
 if(statusFilters.size>0){const sf=new Set([...statusFilters].map(x=>x.toLowerCase()));list=list.filter(p=>sf.has((p.status||'').toLowerCase()));}
 if(searchQ){const q=searchQ.toLowerCase();list=list.filter(p=>p.name.toLowerCase().includes(q)||(p.pid||'').toLowerCase().includes(q)||(p.assignee||'').toLowerCase().includes(q)||(p.ubName||'').toLowerCase().includes(q));}
 list.sort((a,b)=>{
@@ -1795,6 +1833,20 @@ highlightMetric('pending');
 render();
 return;
 }
+if(type==='hp45'){
+hideQFRows();
+const allBtn=document.querySelector('#main-tabs .tab:nth-child(1)');
+setMainTab('all',allBtn,true);
+filterType='hp45';
+document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+const hp45btn=document.getElementById('hp45-filter-btn');
+if(hp45btn)hp45btn.classList.add('active');
+statusFilters=new Set();
+updateStatusPills();
+highlightMetric(type);
+render();
+return;
+}
 const allBtn=document.querySelector('#main-tabs .tab:nth-child(1)');
 setMainTab('all',allBtn,true);
 hideQFRows();
@@ -1872,6 +1924,8 @@ set('m-att',attAll);
 set('m-pending-all',pendingIC+pendingCOC+pendingRebate);
 set('m-nys',nys);
 set('m-cor',openCorsAll);
+const hp45Count=projects.filter(p=>p.hpEnrolled&&daysSince(p.hpEnrolled)>=45).length;
+set('m-hp45',hp45Count);
 const nysIC=projects.filter(p=>p.type==='IC'&&(p.status||'').toLowerCase()==='not yet submitted').length;
 const nysCOC=projects.filter(p=>p.type==='COC'&&(p.status||'').toLowerCase()==='not yet submitted').length;
 const nysRebate=projects.filter(p=>p.type==='Rebate'&&(p.status||'').toLowerCase()==='not yet submitted').length;
@@ -1881,6 +1935,13 @@ set('qf-pend-ic',pendingIC);set('qf-pend-coc',pendingCOC);set('qf-pend-rebate',p
 function renderAlerts(){
 const el=document.getElementById('alerts');
 if(el)el.innerHTML='';
+const hp45=projects.filter(p=>p.hpEnrolled&&daysSince(p.hpEnrolled)>=45);
+if(hp45.length&&el){
+const byAssignee={};
+hp45.forEach(p=>{const a=p.assignee||'Unassigned';byAssignee[a]=(byAssignee[a]||0)+1;});
+const breakdown=Object.entries(byAssignee).map(([a,n])=>`<strong>${a}</strong>: ${n}`).join(' &nbsp;·&nbsp; ');
+el.innerHTML=`<div class="alert-bar d" style="justify-content:space-between;flex-wrap:wrap;gap:8px"><span>⏰ <strong>${hp45.length} project${hp45.length!==1?'s':''} enrolled to Hourly Pricing for 45+ days</strong> need follow-up &nbsp;·&nbsp; ${breakdown}</span><div style="display:flex;gap:6px"><button onclick="clickMetric('hp45')" style="font-size:11px;padding:3px 10px;border-radius:20px;border:0.5px solid var(--db);background:transparent;color:var(--dt);cursor:pointer;white-space:nowrap;font-weight:600">Filter Table</button><button onclick="openReportCombined('hp45')" style="font-size:11px;padding:3px 10px;border-radius:20px;border:0.5px solid var(--db);background:var(--dt);color:#fff;cursor:pointer;white-space:nowrap;font-weight:600">View Report ↗</button></div></div>`;
+}
 }
 function openReportCombined(tab){
 const now=new Date();
@@ -1903,6 +1964,7 @@ if(rpt2)rpt2.value=now.toISOString().slice(0,10);
 switchReportTab(tab||'weekly');
 renderWeekly();
 renderReport();
+if(tab==='hp45')renderHP45Report();
 document.getElementById('report-combined-modal').style.display='flex';
 }
 function closeReportCombined(){document.getElementById('report-combined-modal').style.display='none';}
@@ -1911,18 +1973,19 @@ function closeWeeklyReport(){closeReportCombined();}
 function openReportModal(){openReportCombined('monthly');}
 function closeReportModal(){closeReportCombined();}
 function switchReportTab(tab){
-['weekly','monthly','corrections','rebatepay'].forEach(function(t){
+['weekly','monthly','corrections','rebatepay','hp45'].forEach(function(t){
 var panel=document.getElementById('rpt-panel-'+t);
 var btn=document.getElementById('rpt-tab-'+t);
 if(!panel||!btn)return;
 var active=t===tab;
 panel.style.display=active?'block':'none';
 btn.style.borderBottomColor=active?'var(--text)':'transparent';
-btn.style.color=active?(t==='rebatepay'?'var(--st)':'var(--text)'):'var(--text2)';
+btn.style.color=active?(t==='rebatepay'?'var(--st)':t==='hp45'?'var(--dt)':'var(--text)'):'var(--text2)';
 btn.style.fontWeight=active?'500':'400';
 });
 if(tab==='corrections')renderCorReport();
 if(tab==='rebatepay')renderRebatePayReport();
+if(tab==='hp45')renderHP45Report();
 }
 function getDateRange(fromId,toId){
 const f=document.getElementById(fromId).value;
@@ -2933,6 +2996,50 @@ return{name:t.label,rows};
 const from=document.getElementById('report-from').value;
 const to=document.getElementById('report-to').value;
 downloadXLS(buildXLSX(sheets),'monthly_report_'+from+'_to_'+to+'.xls');
+showToast('Exported successfully!');
+}
+function renderHP45Report(){
+const threshold=parseInt(document.getElementById('hp45-rpt-threshold')?.value||'45');
+const assigneeFilter=document.getElementById('hp45-rpt-assignee')?.value||'all';
+let list=projects.filter(p=>p.hpEnrolled&&daysSince(p.hpEnrolled)>=threshold);
+if(assigneeFilter!=='all')list=list.filter(p=>(p.assignee||'').toLowerCase().includes(assigneeFilter.toLowerCase()));
+list.sort((a,b)=>{const da=daysSince(a.hpEnrolled),db=daysSince(b.hpEnrolled);return(db||0)-(da||0);});
+const countEl=document.getElementById('hp45-rpt-count');
+if(countEl)countEl.textContent=list.length;
+const el=document.getElementById('hp45-rpt-content');
+if(!el)return;
+if(!list.length){el.innerHTML='<p style="color:var(--text2);font-size:13px;padding:1.5rem 0;text-align:center">No projects match this filter. 🎉</p>';return;}
+// Summary by assignee
+const byAssignee={};
+list.forEach(p=>{const a=p.assignee||'Unassigned';if(!byAssignee[a])byAssignee[a]=[];byAssignee[a].push(p);});
+let html='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:1.25rem">';
+Object.entries(byAssignee).forEach(([a,items])=>{
+html+=`<div style="background:var(--dbg);border:0.5px solid var(--db);border-radius:var(--r);padding:10px 14px"><div style="font-size:11px;color:var(--dt);font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">${a}</div><div style="font-size:22px;font-weight:700;color:var(--dt)">${items.length}</div><div style="font-size:10px;color:var(--dt);opacity:.7">project${items.length!==1?'s':''}</div></div>`;
+});
+html+='</div>';
+html+='<div style="background:var(--bg);border:0.5px solid var(--border);border-radius:var(--r);overflow:hidden">';
+html+='<table style="width:100%;border-collapse:collapse">';
+html+='<thead><tr style="background:var(--bg2)"><th style="font-size:11px;font-weight:600;color:var(--text2);text-align:left;padding:9px 12px;border-bottom:0.5px solid var(--border);text-transform:uppercase;letter-spacing:.05em">Customer</th><th style="font-size:11px;font-weight:600;color:var(--text2);text-align:left;padding:9px 12px;border-bottom:0.5px solid var(--border);text-transform:uppercase;letter-spacing:.05em">Project ID</th><th style="font-size:11px;font-weight:600;color:var(--text2);text-align:left;padding:9px 12px;border-bottom:0.5px solid var(--border);text-transform:uppercase;letter-spacing:.05em">Assignee</th><th style="font-size:11px;font-weight:600;color:var(--text2);text-align:left;padding:9px 12px;border-bottom:0.5px solid var(--border);text-transform:uppercase;letter-spacing:.05em">Type</th><th style="font-size:11px;font-weight:600;color:var(--text2);text-align:left;padding:9px 12px;border-bottom:0.5px solid var(--border);text-transform:uppercase;letter-spacing:.05em">HP Enrolled</th><th style="font-size:11px;font-weight:600;color:var(--dt);text-align:center;padding:9px 12px;border-bottom:0.5px solid var(--border);text-transform:uppercase;letter-spacing:.05em">Days</th><th style="font-size:11px;font-weight:600;color:var(--text2);text-align:left;padding:9px 12px;border-bottom:0.5px solid var(--border);text-transform:uppercase;letter-spacing:.05em">Status</th></tr></thead><tbody>';
+list.forEach((p,i)=>{
+const days=daysSince(p.hpEnrolled);
+const pillClass=days>90?'long':days>60?'med':'';
+const bg=i%2===0?'var(--bg)':'var(--bg2)';
+html+=`<tr style="background:${bg}"><td style="padding:9px 12px;font-size:13px;font-weight:500;border-bottom:0.5px solid var(--border)">${p.name||'--'}</td><td style="padding:9px 12px;font-size:12px;color:var(--text2);border-bottom:0.5px solid var(--border)">${p.pid||'--'}</td><td style="padding:9px 12px;font-size:13px;border-bottom:0.5px solid var(--border)">${p.assignee||'--'}</td><td style="padding:9px 12px;border-bottom:0.5px solid var(--border)">${typeBadge(p.type,p.subtype)}</td><td style="padding:9px 12px;font-size:13px;border-bottom:0.5px solid var(--border)">${fmtDate(p.hpEnrolled)}</td><td style="padding:9px 12px;text-align:center;border-bottom:0.5px solid var(--border)"><span class="days-pill ${pillClass}">${days}d</span></td><td style="padding:9px 12px;border-bottom:0.5px solid var(--border)">${statusBadge(p.status)}</td></tr>`;
+});
+html+='</tbody></table></div>';
+el.innerHTML=html;
+}
+function exportHP45XLS(){
+const threshold=parseInt(document.getElementById('hp45-rpt-threshold')?.value||'45');
+const assigneeFilter=document.getElementById('hp45-rpt-assignee')?.value||'all';
+let list=projects.filter(p=>p.hpEnrolled&&daysSince(p.hpEnrolled)>=threshold);
+if(assigneeFilter!=='all')list=list.filter(p=>(p.assignee||'').toLowerCase().includes(assigneeFilter.toLowerCase()));
+list.sort((a,b)=>(daysSince(b.hpEnrolled)||0)-(daysSince(a.hpEnrolled)||0));
+if(!list.length){showToast('No projects to export.');return;}
+const headers=['Customer Name','Project ID','Assignee','Type','Subtype','HP Enrolled Date','Days Enrolled','Status','Address','Notes'];
+const rows=list.map(p=>[p.name||'',p.pid||'',p.assignee||'',TL[p.type]||p.type||'',p.subtype||'',p.hpEnrolled||'',daysSince(p.hpEnrolled)||'',p.status||'',p.address||'',p.notes||'']);
+const xml=buildXLSX([{name:'HP Follow-Up',rows:[headers,...rows]}]);
+downloadXLS(xml,'hp_followup_45days_'+new Date().toISOString().slice(0,10)+'.xls');
 showToast('Exported successfully!');
 }
 load();updateStatusDropdown();render();applyEditMode();
