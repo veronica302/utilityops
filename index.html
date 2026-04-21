@@ -1935,13 +1935,6 @@ set('qf-pend-ic',pendingIC);set('qf-pend-coc',pendingCOC);set('qf-pend-rebate',p
 function renderAlerts(){
 const el=document.getElementById('alerts');
 if(el)el.innerHTML='';
-const hp45=projects.filter(p=>p.hpEnrolled&&daysSince(p.hpEnrolled)>=45);
-if(hp45.length&&el){
-const byAssignee={};
-hp45.forEach(p=>{const a=p.assignee||'Unassigned';byAssignee[a]=(byAssignee[a]||0)+1;});
-const breakdown=Object.entries(byAssignee).map(([a,n])=>`<strong>${a}</strong>: ${n}`).join(' &nbsp;·&nbsp; ');
-el.innerHTML=`<div class="alert-bar d" style="justify-content:space-between;flex-wrap:wrap;gap:8px"><span>⏰ <strong>${hp45.length} project${hp45.length!==1?'s':''} enrolled to Hourly Pricing for 45+ days</strong> need follow-up &nbsp;·&nbsp; ${breakdown}</span><div style="display:flex;gap:6px"><button onclick="clickMetric('hp45')" style="font-size:11px;padding:3px 10px;border-radius:20px;border:0.5px solid var(--db);background:transparent;color:var(--dt);cursor:pointer;white-space:nowrap;font-weight:600">Filter Table</button><button onclick="openReportCombined('hp45')" style="font-size:11px;padding:3px 10px;border-radius:20px;border:0.5px solid var(--db);background:var(--dt);color:#fff;cursor:pointer;white-space:nowrap;font-weight:600">View Report ↗</button></div></div>`;
-}
 }
 function openReportCombined(tab){
 const now=new Date();
@@ -3010,8 +3003,10 @@ const el=document.getElementById('hp45-rpt-content');
 if(!el)return;
 if(!list.length){el.innerHTML='<p style="color:var(--text2);font-size:13px;padding:1.5rem 0;text-align:center">No projects match this filter. 🎉</p>';return;}
 // Summary by assignee
+const ASSIGNEE_KEYS=['Joy','Althesa','Rachel'];
+function normalizeAssignee(a){const s=(a||'').trim();const m=ASSIGNEE_KEYS.find(k=>s.toLowerCase().includes(k.toLowerCase()));return m||s||'Unassigned';}
 const byAssignee={};
-list.forEach(p=>{const a=p.assignee||'Unassigned';if(!byAssignee[a])byAssignee[a]=[];byAssignee[a].push(p);});
+list.forEach(p=>{const a=normalizeAssignee(p.assignee);if(!byAssignee[a])byAssignee[a]=[];byAssignee[a].push(p);});
 let html='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:1.25rem">';
 Object.entries(byAssignee).forEach(([a,items])=>{
 html+=`<div style="background:var(--dbg);border:0.5px solid var(--db);border-radius:var(--r);padding:10px 14px"><div style="font-size:11px;color:var(--dt);font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">${a}</div><div style="font-size:22px;font-weight:700;color:var(--dt)">${items.length}</div><div style="font-size:10px;color:var(--dt);opacity:.7">project${items.length!==1?'s':''}</div></div>`;
