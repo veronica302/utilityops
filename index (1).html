@@ -306,6 +306,11 @@ tr.dr:hover td{background:var(--bg2);cursor:pointer}
     <div class="metric-value mv-p" id="m-cor">0</div>
     <div class="metric-hint">click to filter</div>
   </div>
+  <div class="metric metric-btn" onclick="clickMetric('hp45')" title="Projects enrolled to Hourly Pricing for 45+ days — need follow-up">
+    <div class="metric-label">HP 45+ Days <span style="font-size:9px;color:var(--text3)">follow-up</span></div>
+    <div class="metric-value mv-d" id="m-hp45">0</div>
+    <div class="metric-hint">click to filter</div>
+  </div>
 </div>
 
 <div id="alerts"></div>
@@ -331,6 +336,7 @@ tr.dr:hover td{background:var(--bg2);cursor:pointer}
   <button class="filter-btn" onclick="setFilter('joy',this)">Joy</button>
   <button class="filter-btn" onclick="setFilter('althesa',this)">Althesa</button>
   <button class="filter-btn" onclick="setFilter('rachel',this)">Rachel</button>
+
   <select class="ctrl-select" id="status-filter" onchange="setStatusFilter(this.value)" style="display:none">
     <option value="">All statuses</option>
   </select>
@@ -389,6 +395,8 @@ tr.dr:hover td{background:var(--bg2);cursor:pointer}
     <button id="rpt-tab-weekly" onclick="switchReportTab('weekly')" style="font-size:13px;padding:8px 20px;border:none;border-bottom:2px solid var(--text);background:transparent;color:var(--text);cursor:pointer;font-weight:500">By Date Range</button>
     <button id="rpt-tab-monthly" onclick="switchReportTab('monthly')" style="font-size:13px;padding:8px 20px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--text2);cursor:pointer">Monthly Summary</button>
     <button id="rpt-tab-corrections" onclick="switchReportTab('corrections')" style="font-size:13px;padding:8px 20px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--text2);cursor:pointer">Corrections</button>
+    <button id="rpt-tab-rebatepay" onclick="switchReportTab('rebatepay')" style="font-size:13px;padding:8px 20px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--st);cursor:pointer;font-weight:500">💰 Rebate Payments</button>
+    <button id="rpt-tab-hp45" onclick="switchReportTab('hp45')" style="font-size:13px;padding:8px 20px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--dt);cursor:pointer;font-weight:500">⏰ HP Follow-Up</button>
   </div>
 
   <!-- Date Range (Weekly) Panel -->
@@ -450,6 +458,55 @@ tr.dr:hover td{background:var(--bg2);cursor:pointer}
     <div id="cor-report-summary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:1rem"></div>
     <div id="cor-report-content"></div>
   </div>
+  <!-- Rebate Payments Panel -->
+  <div id="rpt-panel-rebatepay" style="display:none">
+    <div class="report-controls" style="flex-wrap:wrap;gap:10px;margin-bottom:0.5rem">
+      <label style="font-size:13px;color:var(--text2)">From:</label>
+      <input type="date" id="rebatepay-from" onchange="renderRebatePayReport()" style="font-size:13px;padding:6px 10px;border-radius:var(--r);border:0.5px solid var(--border2);background:var(--bg);color:var(--text);outline:none">
+      <label style="font-size:13px;color:var(--text2)">To:</label>
+      <input type="date" id="rebatepay-to" onchange="renderRebatePayReport()" style="font-size:13px;padding:6px 10px;border-radius:var(--r);border:0.5px solid var(--border2);background:var(--bg);color:var(--text);outline:none">
+      <select id="rebatepay-status" onchange="renderRebatePayReport()" style="font-size:13px;padding:6px 10px;border-radius:var(--r);border:0.5px solid var(--border2);background:var(--bg);color:var(--text);outline:none">
+        <option value="all">All Payment Statuses</option>
+        <option value="Sent for Payment">Sent for Payment</option>
+        <option value="Ready For Payment">Ready For Payment</option>
+        <option value="Payment Processed">Payment Processed</option>
+      </select>
+      <button class="export-btn" onclick="exportRebatePayXLS()" style="margin-left:auto">Export XLS</button>
+    </div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:1rem;padding-left:2px">Filters by <strong>Payment Status Date</strong> — the date recorded when the rebate was marked as Sent for Payment, Ready For Payment, or Payment Processed</div>
+    <div id="rebatepay-summary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:1rem"></div>
+    <div id="rebatepay-content"></div>
+  </div>
+  <!-- HP Follow-Up Panel -->
+  <div id="rpt-panel-hp45" style="display:none">
+    <div style="background:var(--dbg);border:0.5px solid var(--db);border-radius:var(--r);padding:10px 14px;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+      <div>
+        <div style="font-size:13px;font-weight:700;color:var(--dt);text-transform:uppercase;letter-spacing:.04em">⏰ HP Hourly Pricing Follow-Up List</div>
+        <div style="font-size:12px;color:var(--dt);margin-top:2px;opacity:.8">Projects enrolled to Hourly Pricing for more than 45 days — review and follow up</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <div style="text-align:center">
+          <div style="font-size:28px;font-weight:700;color:var(--dt)" id="hp45-rpt-count">0</div>
+          <div style="font-size:10px;color:var(--dt);opacity:.7;text-transform:uppercase;letter-spacing:.04em">Projects</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <select id="hp45-rpt-assignee" onchange="renderHP45Report()" style="font-size:13px;padding:6px 10px;border-radius:var(--r);border:0.5px solid var(--db);background:var(--dbg);color:var(--dt);outline:none">
+            <option value="all">All Assignees</option>
+            <option value="Joy">Joy</option>
+            <option value="Althesa">Althesa</option>
+            <option value="Rachel">Rachel</option>
+          </select>
+          <select id="hp45-rpt-threshold" onchange="renderHP45Report()" style="font-size:13px;padding:6px 10px;border-radius:var(--r);border:0.5px solid var(--db);background:var(--dbg);color:var(--dt);outline:none">
+            <option value="45">45+ days</option>
+            <option value="60">60+ days</option>
+            <option value="90">90+ days</option>
+          </select>
+        </div>
+        <button class="export-btn" onclick="exportHP45XLS()" style="border-color:var(--db);color:var(--dt)">Export XLS</button>
+      </div>
+    </div>
+    <div id="hp45-rpt-content"></div>
+  </div>
 </div>
 </div>
 
@@ -464,6 +521,21 @@ tr.dr:hover td{background:var(--bg2);cursor:pointer}
   </div>
   <div class="modal-actions">
     <button class="btn-s" onclick="confirmApprovalDate()" style="width:100%">Save Date</button>
+  </div>
+</div>
+</div>
+
+<!-- Payment Status Date Popup -->
+<div class="modal-bg" id="payment-date-modal" style="display:none">
+<div class="modal" style="max-width:360px">
+  <div class="modal-hdr"><h2>💰 Rebate Payment Status</h2></div>
+  <p style="font-size:13px;color:var(--text2);margin-bottom:1.25rem">The status was changed to <strong id="payment-status-label"></strong>. Please enter the date this status was set.</p>
+  <div class="fr">
+    <label>Payment Status Date *</label>
+    <input type="date" id="payment-date-input" style="font-size:13px;padding:7px 10px;border-radius:var(--r);border:0.5px solid var(--border2);background:var(--bg);color:var(--text);outline:none;width:100%">
+  </div>
+  <div class="modal-actions">
+    <button class="btn-s" onclick="confirmPaymentDate()" style="width:100%">Save Date</button>
   </div>
 </div>
 </div>
@@ -521,6 +593,7 @@ tr.dr:hover td{background:var(--bg2);cursor:pointer}
     </div>
     <div class="fr"><label>Assigned To *</label>
       <select id="f-assignee">
+        <option value="">— No Assignee —</option>
         <option value="Althesa Ancheta">Althesa Ancheta</option>
         <option value="Joy Completo">Joy Completo</option>
         <option value="Rachel Gendrano">Rachel Gendrano</option>
@@ -532,7 +605,7 @@ tr.dr:hover td{background:var(--bg2);cursor:pointer}
   <div class="fg">
     <div class="fr"><label>UB Name</label><input type="text" id="f-ubname" placeholder="Optional"></div>
     <div class="fr" style="position:relative">
-      <label>PM Name *</label>
+      <label>PM Name</label>
       <input type="text" id="f-pm" placeholder="Type or select PM..." autocomplete="off" oninput="filterPMList(this.value)" onfocus="filterPMList(this.value)" onblur="setTimeout(()=>document.getElementById('pm-dropdown').style.display='none',150)">
       <div id="pm-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:200;background:var(--bg);border:0.5px solid var(--border2);border-radius:var(--r);box-shadow:0 4px 16px rgba(0,0,0,.12);max-height:200px;overflow-y:auto;margin-top:2px"></div>
     </div>
@@ -552,6 +625,8 @@ tr.dr:hover td{background:var(--bg2);cursor:pointer}
   <div id="coc-fields" style="display:none">
     <div class="sec-lbl">COC Details</div>
     <input type="hidden" id="f-coc-approved">
+    <input type="hidden" id="f-payment-status-date">
+    <div class="fr"><label>HP Enrollment Date</label><input type="date" id="f-coc-hp-enrolled"></div>
     <div class="fr" style="flex-direction:column;gap:4px">
       <label>Linked IC Project</label>
       <div style="position:relative">
@@ -580,6 +655,18 @@ tr.dr:hover td{background:var(--bg2);cursor:pointer}
     <div class="fr"><label>Rebate Amount ($)</label><input type="number" id="f-rebate-amount" step="0.01"></div>
     <input type="hidden" id="f-rebate-program">
     <div class="fr"><label>HP Enrollment Date (for days counter)</label><input type="date" id="f-rebate-hp-date"></div>
+    <div class="fr" style="flex-direction:column;gap:4px">
+      <label>Linked COC Project</label>
+      <div style="position:relative">
+        <input type="text" id="f-linked-coc-search" placeholder="Search by name or ComEd ID..." autocomplete="off"
+          oninput="searchLinkedCOC(this.value)" onfocus="searchLinkedCOC(this.value)"
+          onblur="setTimeout(()=>{const d=document.getElementById('coc-link-dropdown');if(d)d.style.display='none'},200)"
+          style="width:100%;box-sizing:border-box">
+        <div id="coc-link-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:300;background:var(--bg);border:0.5px solid var(--border2);border-radius:var(--r);box-shadow:0 4px 16px rgba(0,0,0,.12);max-height:200px;overflow-y:auto;margin-top:2px"></div>
+      </div>
+      <div id="f-linked-coc-display" style="display:none;margin-top:4px;padding:8px 10px;background:var(--bg2);border-radius:var(--r);border:0.5px solid var(--border);font-size:13px"></div>
+      <input type="hidden" id="f-linked-coc-id">
+    </div>
   </div>
 
   <div class="sec-lbl">Correction / ComEd Feedback</div>
@@ -662,9 +749,10 @@ tr.dr:hover td{background:var(--bg2);cursor:pointer}
   <div class="detail-panel">
     <div class="dp-top" id="detail-content"></div>
     <div class="note-input-area" id="note-input-area" style="display:none">
+      <div id="note-author-label" style="font-size:11px;color:var(--text2);margin-bottom:5px;font-weight:500;text-transform:uppercase;letter-spacing:.04em"></div>
       <textarea id="note-text" placeholder="Add a note or update..."></textarea>
       <div class="note-row">
-        <select id="note-author"><option>Joy</option><option>Althesa</option><option>Rachel</option><option>Manager</option></select>
+        <select id="note-author"><option value="">— Select name —</option><option>Joy</option><option>Althesa</option><option>Rachel</option><option>Manager</option></select>
         <button onclick="saveNote()">Add Note</button>
       </div>
     </div>
@@ -732,45 +820,109 @@ async function sbFetch(path, options={}) {
   return text ? JSON.parse(text) : null;
 }
 
-// Load all data from Supabase
-async function loadFromSupabase() {
+// ─── SAVE GUARD ────────────────────────────────────────────────────────────────
+// Any write operation calls lockPoll() first. The poll will NEVER run while
+// a save is in flight or within POLL_LOCK_MS after the last confirmed save.
+const POLL_LOCK_MS = 300000; // 5 minutes
+window._pollLockedUntil = 0;
+function lockPoll() {
+  window._pollLockedUntil = Date.now() + POLL_LOCK_MS;
+}
+function pollIsLocked() {
+  return Date.now() < window._pollLockedUntil;
+}
+
+// ─── LOCAL STORAGE CACHE ───────────────────────────────────────────────────────
+// Always write to localStorage on every change. Used as fallback if Supabase
+// fails to load, so no data is ever lost on refresh.
+function saveLocal() {
   try {
-    showToast('Loading data...');
-    // Load projects
-    const pRows = await sbFetch('/rest/v1/projects?select=id,data&order=id.asc&limit=2000');
-    if (pRows && pRows.length > 0) {
-      projects = pRows.map(r => r.data);
-    } else {
-      // First time - seed from IMPORTED
-      projects = IMPORTED.map(p => ({...p, activityLog: p.activityLog||[], cocApprovedDate: p.cocApprovedDate||''}));
-      await saveAllProjectsToSupabase();
-    }
-    // Load corrections
-    const cRows = await sbFetch('/rest/v1/corrections?select=id,data&order=id.asc&limit=5000');
-    corrections = cRows ? cRows.map(r => r.data) : [];
-    // Load settings
-    const sRows = await sbFetch('/rest/v1/settings?select=key,value');
-    if (sRows) {
-      const nextIdRow = sRows.find(r => r.key === 'nextId');
-      const nextCorIdRow = sRows.find(r => r.key === 'nextCorId');
-      if (nextIdRow) nextId = parseInt(nextIdRow.value);
-      if (nextCorIdRow) nextCorId = parseInt(nextCorIdRow.value);
-    }
-    showToast('Data loaded - ' + projects.length + ' projects');
-    await cleanupDuplicateCorrections();
+    localStorage.setItem(SK, JSON.stringify({projects, corrections, nextId, nextCorId, savedAt: Date.now()}));
+  } catch(e) { /* storage full — not critical */ }
+}
+function loadLocal() {
+  try {
+    const raw = localStorage.getItem(SK);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch(e) { return null; }
+}
+
+// ─── LOAD ──────────────────────────────────────────────────────────────────────
+async function loadFromSupabase() {
+  // Step 1: Immediately show whatever is in localStorage so the UI is never blank
+  const local = loadLocal();
+  if (local && local.projects && local.projects.length > 0) {
+    projects = local.projects;
+    corrections = local.corrections || [];
+    nextId = local.nextId || nextId;
+    nextCorId = local.nextCorId || nextCorId;
     render();
     updateMetrics();
-  } catch(e) {
-    console.error('Load error:', e);
-    showToast('Error loading data. Using local data.');
-    seedData();
-    render();
+    showToast('Loading latest data from cloud...');
+  }
+
+  // Step 2: Fetch from Supabase and merge
+  let retries = 0;
+  while (retries < 3) {
+    try {
+      const pRows = await sbFetch('/rest/v1/projects?select=id,data&order=id.asc&limit=2000');
+      if (pRows && pRows.length > 0) {
+        // Merge: remote is source of truth, but keep any local-only unsaved projects
+        const remoteIds = new Set(pRows.map(r => String(r.data.id)));
+        const localOnly = projects.filter(p => !remoteIds.has(String(p.id)));
+        projects = pRows.map(r => r.data).concat(localOnly);
+      } else if (pRows && pRows.length === 0) {
+        // Truly empty DB — only seed if local is also empty
+        if (!local || !local.projects || local.projects.length === 0) {
+          projects = IMPORTED.map(p => ({...p, activityLog: p.activityLog||[], cocApprovedDate: p.cocApprovedDate||''}));
+          lockPoll();
+          saveLocal();
+          await saveAllProjectsToSupabase();
+          showToast('First-time setup complete.');
+        }
+        // else: keep local data — Supabase may just be lagging
+      }
+
+      const cRows = await sbFetch('/rest/v1/corrections?select=id,data&order=id.asc&limit=5000');
+      if (cRows) {
+        const remoteCorIds = new Set(cRows.map(r => String(r.data.id)));
+        const localOnlyCors = corrections.filter(c => !remoteCorIds.has(String(c.id)));
+        corrections = cRows.map(r => r.data).concat(localOnlyCors);
+      }
+
+      const sRows = await sbFetch('/rest/v1/settings?select=key,value');
+      if (sRows) {
+        const nextIdRow = sRows.find(r => r.key === 'nextId');
+        const nextCorIdRow = sRows.find(r => r.key === 'nextCorId');
+        if (nextIdRow && parseInt(nextIdRow.value) > nextId) nextId = parseInt(nextIdRow.value);
+        if (nextCorIdRow && parseInt(nextCorIdRow.value) > nextCorId) nextCorId = parseInt(nextCorIdRow.value);
+      }
+
+      saveLocal(); // Cache the freshly loaded data
+      showToast('✅ Data loaded — ' + projects.length + ' projects');
+      await cleanupDuplicateCorrections();
+      render();
+      updateMetrics();
+      return; // success
+    } catch(e) {
+      retries++;
+      console.error('Load attempt ' + retries + ' failed:', e);
+      if (retries < 3) {
+        showToast('⚠️ Cloud load failed, retrying... (' + retries + '/3)');
+        await new Promise(res => setTimeout(res, 3000 * retries));
+      } else {
+        showToast('⚠️ Could not reach cloud. Showing locally cached data.');
+        // Local data was already loaded in Step 1 — just render it
+        render();
+        updateMetrics();
+      }
+    }
   }
 }
 
 async function saveAllProjectsToSupabase() {
   const rows = projects.map(p => ({id: p.id, data: p}));
-  // Upsert in batches of 100
   for (let i = 0; i < rows.length; i += 100) {
     const batch = rows.slice(i, i + 100);
     await sbFetch('/rest/v1/projects', {
@@ -782,18 +934,16 @@ async function saveAllProjectsToSupabase() {
 }
 
 async function saveProjectToSupabase(p) {
-  window._lastSaveTime = Date.now();
   const result = await sbFetch('/rest/v1/projects', {
     method: 'POST',
     prefer: 'resolution=merge-duplicates',
     body: JSON.stringify({id: p.id, data: p})
   });
-  console.log('Saved project '+p.id+' to Supabase, corList length: '+(p.corList?p.corList.length:0));
+  console.log('Saved project ' + p.id + ' to Supabase');
   return result;
 }
 
 async function saveCorrectionToSupabase(c) {
-  window._lastSaveTime = Date.now();
   await sbFetch('/rest/v1/corrections', {
     method: 'POST',
     prefer: 'resolution=merge-duplicates',
@@ -802,13 +952,11 @@ async function saveCorrectionToSupabase(c) {
 }
 
 async function deleteCorrectionFromSupabase(id) {
-  window._lastSaveTime = Date.now();
   await sbFetch('/rest/v1/corrections?id=eq.' + id, {method: 'DELETE'});
 }
 
 async function deleteProjectFromSupabase(id) {
   await sbFetch('/rest/v1/projects?id=eq.' + id, {method: 'DELETE'});
-  // Also delete linked corrections
   const linked = corrections.filter(c => c.linkedProjectId && parseInt(c.linkedProjectId) === id);
   for (const c of linked) {
     await sbFetch('/rest/v1/corrections?id=eq.' + c.id, {method: 'DELETE'});
@@ -826,26 +974,35 @@ async function saveSettingsToSupabase() {
   });
 }
 
-// Poll for changes every 10 seconds
+// ─── POLL ──────────────────────────────────────────────────────────────────────
+// Poll every 30s (reduced from 10s — less chance of race conditions).
+// NEVER runs while poll is locked (i.e., within 5 min of any save).
+// NEVER runs while the tab is hidden (user switched away).
 let pollTimer = null;
 function startPolling() {
   if (pollTimer) clearInterval(pollTimer);
   pollTimer = setInterval(async () => {
     try {
-      // Skip poll if we saved within the last 15 seconds to avoid overwriting local changes
-      if(window._lastSaveTime && Date.now() - window._lastSaveTime < 15000) return;
+      if (pollIsLocked()) return;
+      if (document.hidden) return; // Don't poll when tab is in background
       const pRows = await sbFetch('/rest/v1/projects?select=id,data&order=id.asc&limit=2000');
-      if (pRows) {
-        projects = pRows.map(r => r.data);
+      if (pRows && pRows.length > 0) {
+        const remoteIds = new Set(pRows.map(r => String(r.data.id)));
+        const localOnly = projects.filter(p => !remoteIds.has(String(p.id)));
+        projects = pRows.map(r => r.data).concat(localOnly);
         const cRows = await sbFetch('/rest/v1/corrections?select=id,data&order=id.asc&limit=5000');
-        corrections = cRows ? cRows.map(r => r.data) : [];
+        if (cRows) {
+          const remoteCorIds = new Set(cRows.map(r => String(r.data.id)));
+          const localOnlyCors = corrections.filter(c => !remoteCorIds.has(String(c.id)));
+          corrections = cRows.map(r => r.data).concat(localOnlyCors);
+        }
+        saveLocal();
         render();
         updateMetrics();
       }
-      // Also refresh viewer count from Supabase
       await loadViewersFromSupabase();
     } catch(e) { /* silent poll failure */ }
-  }, 10000);
+  }, 30000);
 }
 
 
@@ -977,31 +1134,158 @@ function exportCorReportXLS(){
   showToast('Exported!');
 }
 
+function renderRebatePayReport(){
+  var from=document.getElementById('rebatepay-from').value;
+  var to=document.getElementById('rebatepay-to').value;
+  var statusFilter=document.getElementById('rebatepay-status').value;
+  var wrap=document.getElementById('rebatepay-content');
+  var sumEl=document.getElementById('rebatepay-summary');
+  if(!wrap)return;
+  if(!from||!to){wrap.innerHTML='<p style="color:var(--text2);font-size:13px;padding:1rem 0">Please select a date range.</p>';if(sumEl)sumEl.innerHTML='';return;}
+  var fromD=new Date(from);fromD.setHours(0,0,0,0);
+  var toD=new Date(to);toD.setHours(23,59,59,999);
+  var PAY_STATUSES=['Sent for Payment','Ready For Payment','Payment Processed'];
+  // Filter rebates: use paymentStatusDate (set when status changed to a payment status)
+  var rebates=projects.filter(function(p){
+    if(p.type!=='Rebate')return false;
+    var st=p.status||'';
+    if(statusFilter!=='all'&&st!==statusFilter)return false;
+    if(!PAY_STATUSES.includes(st))return false;
+    // Use paymentStatusDate — the date recorded when status was set to a payment status
+    var d=p.paymentStatusDate||'';
+    if(!d)return false; // exclude records with no payment status date
+    var pd=new Date(d);pd.setHours(12,0,0,0);
+    return pd>=fromD&&pd<=toD;
+  });
+  // Sort newest first
+  rebates.sort(function(a,b){
+    var da=new Date(a.paymentStatusDate||'2000-01-01');
+    var db=new Date(b.paymentStatusDate||'2000-01-01');
+    return db-da;
+  });
+  // Summary metrics
+  var totByStatus={};
+  var totAmount=0;
+  var assignees=['Joy','Althesa','Rachel'];
+  var byAssignee={Joy:0,Althesa:0,Rachel:0,Other:0};
+  rebates.forEach(function(p){
+    var st=p.status||'';
+    totByStatus[st]=(totByStatus[st]||0)+1;
+    totAmount+=(parseFloat(p.rebateAmount)||0);
+    var a=(p.assignee||'').trim();
+    var who=assignees.find(function(x){return a.toLowerCase().includes(x.toLowerCase());})||'Other';
+    byAssignee[who]=(byAssignee[who]||0)+1;
+  });
+  var statusColors={'Sent for Payment':'var(--it)','Ready For Payment':'var(--st)','Payment Processed':'var(--pt)'};
+  var statusBgs={'Sent for Payment':'var(--ibg)','Ready For Payment':'var(--sbg)','Payment Processed':'var(--pbg)'};
+  if(sumEl){
+    var sc='';
+    sc+='<div class="metric" style="padding:12px 14px;border-left:3px solid var(--it)"><div class="metric-label">Total Rebates</div><div class="metric-value mv-i" style="font-size:22px">'+rebates.length+'</div></div>';
+    if(totAmount>0)sc+='<div class="metric" style="padding:12px 14px;border-left:3px solid var(--st)"><div class="metric-label">Total Amount</div><div class="metric-value mv-s" style="font-size:18px">$'+totAmount.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})+'</div></div>';
+    PAY_STATUSES.forEach(function(st){
+      if(totByStatus[st]){
+        sc+='<div class="metric" style="padding:12px 14px;border-left:3px solid '+statusColors[st]+'"><div class="metric-label" style="color:'+statusColors[st]+'">'+st+'</div><div class="metric-value" style="font-size:22px;color:'+statusColors[st]+'">'+totByStatus[st]+'</div></div>';
+      }
+    });
+    sumEl.innerHTML=sc;
+  }
+  if(!rebates.length){wrap.innerHTML='<p style="text-align:center;color:var(--text2);padding:2rem;font-size:13px">No rebates found in this date range with the selected status.</p>';return;}
+  // Group by status for display
+  var grouped={};
+  if(statusFilter==='all'){
+    PAY_STATUSES.forEach(function(st){
+      var list=rebates.filter(function(p){return p.status===st;});
+      if(list.length)grouped[st]=list;
+    });
+  } else {
+    grouped[statusFilter]=rebates;
+  }
+  function statusDot(st){
+    var c=statusColors[st]||'var(--it)';
+    return '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+c+';margin-right:5px;vertical-align:middle"></span>';
+  }
+  function fmtAmt(v){return v?(parseFloat(v)||0).toLocaleString('en-US',{style:'currency',currency:'USD'}):'—';}
+  var html='';
+  Object.keys(grouped).forEach(function(st){
+    var list=grouped[st];
+    var grpTotal=list.reduce(function(s,p){return s+(parseFloat(p.rebateAmount)||0);},0);
+    var grpAmt=grpTotal>0?'<span style="font-weight:400;color:'+statusColors[st]+';font-size:11px;margin-left:8px">$'+grpTotal.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})+'</span>':'';
+    html+='<div class="report-card" style="margin-bottom:1.25rem">';
+    html+='<div class="report-card-hdr" style="background:'+statusBgs[st]+';color:'+statusColors[st]+'">'+statusDot(st)+st+grpAmt+'<span style="font-weight:400;color:'+statusColors[st]+';opacity:0.8">'+list.length+' rebate'+(list.length!==1?'s':'')+'</span></div>';
+    html+='<div style="overflow-x:auto"><table class="report-table"><thead><tr>';
+    html+='<th>Account</th><th>Project ID</th><th>Program</th><th>Assignee</th><th>Payment Status Date</th><th>Submitted Date</th><th>HP Enrolled</th><th>Amount</th><th>Notes</th>';
+    html+='</tr></thead><tbody>';
+    list.forEach(function(p){
+      var payDateVal=p.paymentStatusDate||'';
+      var submittedVal=p.received||'';
+      var hpVal=p.hpEnrolled||'';
+      var notesSnip=(p.notes||'').slice(0,80)+(p.notes&&p.notes.length>80?'…':'');
+      html+='<tr style="cursor:pointer" onclick="closeReportCombined();setTimeout(function(){showDetail('+p.id+')},100)">';
+      html+='<td style="font-size:13px;font-weight:500">'+p.name+'</td>';
+      html+='<td style="font-size:13px;color:var(--text2)">'+(p.pid||'—')+'</td>';
+      html+='<td style="font-size:12px">'+(p.rebateProgram||p.subtype||'—')+'</td>';
+      html+='<td style="font-size:13px">'+(p.assignee||'—')+'</td>';
+      html+='<td style="font-size:13px;font-weight:500;color:'+statusColors[st]+'">'+(payDateVal?fmtDate(payDateVal):'<span style="color:var(--text3);font-weight:normal">—</span>')+'</td>';
+      html+='<td style="font-size:13px">'+(submittedVal?fmtDate(submittedVal):'—')+'</td>';
+      html+='<td style="font-size:13px">'+(hpVal?fmtDate(hpVal):'—')+'</td>';
+      html+='<td style="font-size:13px;font-weight:600;color:'+statusColors[st]+'">'+(p.rebateAmount?fmtAmt(p.rebateAmount):'—')+'</td>';
+      html+='<td style="font-size:11px;color:var(--text2);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+notesSnip+'</td>';
+      html+='</tr>';
+    });
+    html+='</tbody></table></div></div>';
+  });
+  wrap.innerHTML=html;
+}
 
-function resolveCorInPanel(projectId,encodedNotes,encodedType){
+function exportRebatePayXLS(){
+  var from=document.getElementById('rebatepay-from').value;
+  var to=document.getElementById('rebatepay-to').value;
+  var statusFilter=document.getElementById('rebatepay-status').value;
+  if(!from||!to){showToast('Please select a date range first.');return;}
+  var fromD=new Date(from);fromD.setHours(0,0,0,0);
+  var toD=new Date(to);toD.setHours(23,59,59,999);
+  var PAY_STATUSES=['Sent for Payment','Ready For Payment','Payment Processed'];
+  var rebates=projects.filter(function(p){
+    if(p.type!=='Rebate')return false;
+    var st=p.status||'';
+    if(statusFilter!=='all'&&st!==statusFilter)return false;
+    if(!PAY_STATUSES.includes(st))return false;
+    var d=p.paymentStatusDate||'';
+    if(!d)return false;
+    var pd=new Date(d);pd.setHours(12,0,0,0);
+    return pd>=fromD&&pd<=toD;
+  });
+  rebates.sort(function(a,b){return new Date(b.paymentStatusDate||'2000-01-01')-new Date(a.paymentStatusDate||'2000-01-01');});
+  var headers=['Account','Project ID','Program','Assignee','Payment Status Date','Submitted Date','HP Enrolled','Status','Amount','Notes'];
+  var rows=rebates.map(function(p){
+    return[p.name||'',p.pid||'',p.rebateProgram||p.subtype||'',p.assignee||'',p.paymentStatusDate||'',p.received||'',p.hpEnrolled||'',p.status||'',parseFloat(p.rebateAmount)||'',p.notes||''];
+  });
+  downloadXLS(buildXLSX([{name:'Rebate Payments',rows:[headers].concat(rows)}]),'rebate_payments_'+from+'_to_'+to+'.xls');
+  showToast('Exported!');
+}
+
+function resolveCorInPanel(projectId, corIndex){
   projectId=parseInt(projectId)||projectId;
-  var targetNotes=decodeURIComponent(encodedNotes||'');
-  var targetType=decodeURIComponent(encodedType||'');
   const p=projects.find(x=>x.id===projectId);
-  if(!p||!p.corList)return;
-  const ci=p.corList.findIndex(c=>(c.corNotes||'').trim()===targetNotes.trim()&&(c.corType||'')===targetType);
-  if(ci===-1||!p.corList[ci])return;
-  const c=p.corList[ci];
+  if(!p){showToast('Project not found.');return;}
+  if(!p.corList||!p.corList[corIndex]){showToast('Correction not found.');return;}
+  const c=p.corList[corIndex];
   c.status=c.status==='Resolved'?'Open':'Resolved';
   p.lastEditedBy=myViewerName||'Unknown';
   p.lastEditedAt=new Date().toISOString();
-  // Also update in standalone corrections array if exists
+  // Also update matching standalone correction if it exists
   const sc=corrections.find(function(x){
-    return x.corNotes===c.corNotes&&x.corReceived===c.corReceived&&parseInt(x.linkedProjectId)===projectId;
+    return String(x.linkedProjectId)===String(projectId)&&(x.corNotes||'').trim()===(c.corNotes||'').trim()&&(x.corType||'')===(c.corType||'');
   });
   if(sc){
     sc.status=c.status;
     saveCorrectionToSupabase(sc).catch(()=>{});
   }
-  saveProjectToSupabase(p).catch(()=>{});
-  save();
-  showDetail(projectId);
-  render();
+  window._pollLockedUntil = Date.now() + 300000;
+  saveProjectToSupabase(p).then(function(){
+    lockPoll();save();showDetail(projectId);render();
+    showToast(c.status==='Resolved'?'Marked as resolved!':'Reopened.');
+  }).catch(function(){save();showDetail(projectId);render();});
 }
 
 function buildCorItems(allCors, projResolved, projectId){
@@ -1024,7 +1308,7 @@ function buildCorItems(allCors, projResolved, projectId){
       var btnStyle='margin-top:8px;font-size:12px;padding:4px 12px;border-radius:var(--r);cursor:pointer;border:none;background:'+(c.status==='Resolved'?'var(--sbg)':'#16a34a')+';color:'+(c.status==='Resolved'?'var(--st)':'#fff')+';font-weight:600;box-shadow:0 2px 4px rgba(22,163,74,0.35),inset 0 1px 0 rgba(255,255,255,0.2)';
       var safeNotes=encodeURIComponent(c.corNotes||'');
       var safeType=encodeURIComponent(c.corType||'');
-      html+='<div style="display:flex;gap:6px;margin-top:8px"><button style="'+btnStyle+';box-shadow:inset 0 1px 0 rgba(255,255,255,0.15),0 1px 3px rgba(0,0,0,0.15);text-shadow:0 1px 1px rgba(0,0,0,0.2)" onclick="resolveCorInPanel('+projectId+',\''+safeNotes+'\',\''+safeType+'\')">'+(c.status==='Resolved'?'✓ Resolved':'Mark as Resolved')+'</button>';
+      html+='<div style="display:flex;gap:6px;margin-top:8px"><button style="'+btnStyle+';box-shadow:inset 0 1px 0 rgba(255,255,255,0.15),0 1px 3px rgba(0,0,0,0.15);text-shadow:0 1px 1px rgba(0,0,0,0.2)" onclick="resolveCorInPanel('+projectId+','+i+')">'+(c.status==='Resolved'?'✓ Resolved':'Mark as Resolved')+'</button>';
       if(pinUnlocked)html+='<button style="font-size:12px;padding:4px 12px;border-radius:var(--r);cursor:pointer;border:none;background:#dc2626;color:#fff;font-weight:600;box-shadow:0 1px 3px rgba(220,38,38,0.4),inset 0 1px 0 rgba(255,255,255,0.15)" onclick="deleteCorInPanel('+projectId+',\''+safeNotes+'\',\''+safeType+'\')">Delete</button>';
       html+='</div>';
     }
@@ -1070,19 +1354,26 @@ async function cleanupDuplicateCorrections(){
   });
 }
 
-function deleteCorInPanel(projectId,encodedNotes,encodedType){
+function deleteCorInPanel(projectId, corIndex, encodedNotes, encodedType){
   projectId=parseInt(projectId)||projectId;
-  var targetNotes=decodeURIComponent(encodedNotes||'');
-  var targetType=decodeURIComponent(encodedType||'');
   var p=projects.find(function(x){return x.id===projectId;});
   if(!p){showToast('Project not found.');return;}
+  // Get the correction data by index (preferred) or fall back to encoded strings
+  var targetNotes, targetType;
+  if(typeof corIndex==='number'&&p.corList&&p.corList[corIndex]){
+    targetNotes=(p.corList[corIndex].corNotes||'').trim();
+    targetType=p.corList[corIndex].corType||'';
+  } else {
+    targetNotes=decodeURIComponent(encodedNotes||'');
+    targetType=decodeURIComponent(encodedType||'');
+  }
   showDeleteConfirm('this correction',function(){
-    window._lastSaveTime=Date.now()+30000; // block poll for 30s
+    lockPoll();
     if(!p.corList)p.corList=[];
     // Remove from corList
     var before=p.corList.length;
     p.corList=p.corList.filter(function(c){
-      return !((c.corNotes||'').trim()===(targetNotes).trim()&&(c.corType||'')===targetType);
+      return !((c.corNotes||'').trim()===targetNotes&&(c.corType||'')===targetType);
     });
     console.log('Removed '+(before-p.corList.length)+' from corList, '+p.corList.length+' remain');
     if(p.corList.length===0){p.hasCor=false;p.corType='';p.corNotes='';p.corDue='';}
@@ -1091,7 +1382,7 @@ function deleteCorInPanel(projectId,encodedNotes,encodedType){
     // Remove matching standalone corrections and delete from Supabase
     corrections=corrections.filter(function(c){
       var match=parseInt(c.linkedProjectId)===projectId
-        &&(c.corNotes||'').trim()===(targetNotes).trim()
+        &&(c.corNotes||'').trim()===targetNotes
         &&(c.corType||'')===targetType;
       if(match&&c.id) sbFetch('/rest/v1/corrections?id=eq.'+c.id,{method:'DELETE'}).catch(function(){});
       return !match;
@@ -1117,7 +1408,7 @@ projects=IMPORTED.map(p=>({...p,activityLog:p.activityLog||[],cocApprovedDate:p.
 corrections=[];
 save();
 }
-function save(){try{localStorage.setItem(SK,JSON.stringify({projects,corrections,nextId,nextCorId}));}catch(e){showToast('Storage full — export first.');}saveSettingsToSupabase().catch(()=>{});}
+function save(){lockPoll();saveLocal();saveSettingsToSupabase().catch(()=>{});}
 function businessDaysSince(s){
 if(!s)return null;
 const start=new Date(s);start.setHours(0,0,0,0);
@@ -1282,14 +1573,20 @@ function setPageSize(v){pageSize=parseInt(v);currentPage=1;render();}
 function getList(){
 if(mainTab==='COR'){
 const RESOLVED_STATUSES=['approved','payment processed','sent for payment','ready for payment','enrolled'];
+// Helper: find project for a correction, tolerating bad linkedProjectId
+function findProjectForCor(c){
+  let p=null;
+  if(c.linkedProjectId){p=projects.find(x=>x.id===parseInt(c.linkedProjectId)||String(x.id)===String(c.linkedProjectId));}
+  if(!p&&c.name){p=projects.find(x=>x.name===c.name&&(x.type===c.type||!c.type));}
+  if(!p&&c.pid){p=projects.find(x=>x.pid===c.pid&&(x.type===c.type||!c.type));}
+  return p;
+}
 // Start with standalone corrections
 let list=[...corrections].filter(c=>{
 if(c.status==='Resolved')return false;
-if(c.linkedProjectId){
-const p=projects.find(x=>x.id===parseInt(c.linkedProjectId));
-if(!p)return false;
-if(RESOLVED_STATUSES.some(s=>(p.status||'').toLowerCase()===s))return false;
-}
+const p=findProjectForCor(c);
+if(c.linkedProjectId&&!p)return true; // show even if project not found — let user resolve it
+if(p&&RESOLVED_STATUSES.some(s=>(p.status||'').toLowerCase()===s))return false;
 return true;
 });
 // Also add corList entries from projects that have no matching standalone correction
@@ -1298,7 +1595,6 @@ if(!p.corList||!p.corList.length)return;
 if(RESOLVED_STATUSES.some(s=>(p.status||'').toLowerCase()===s))return;
 p.corList.forEach(c=>{
 if(c.status==='Resolved')return;
-// Check if already in standalone corrections
 const already=list.some(x=>parseInt(x.linkedProjectId)===p.id&&(x.corNotes||'').trim()===(c.corNotes||'').trim()&&(x.corType||'')===(c.corType||''));
 if(!already){
 list.push({id:'cl_'+p.id+'_'+(c.corType||'')+'_'+Math.random(),name:p.name,pid:p.pid,type:p.type,assignee:p.assignee,corType:c.corType,corReceived:c.corReceived,corDue:c.corDue,corNotes:c.corNotes,status:c.status||'Open',linkedProjectId:String(p.id)});
@@ -1316,6 +1612,7 @@ if(filterType==='corrections')list=list.filter(p=>needsAttention(p));
 if(filterType==='joy')list=list.filter(p=>(p.assignee||'').toLowerCase().includes('joy'));
 if(filterType==='althesa')list=list.filter(p=>(p.assignee||'').toLowerCase().includes('althesa'));
 if(filterType==='rachel')list=list.filter(p=>(p.assignee||'').toLowerCase().includes('rachel'));
+if(filterType==='hp45')list=list.filter(p=>p.hpEnrolled&&daysSince(p.hpEnrolled)>=45);
 if(statusFilters.size>0){const sf=new Set([...statusFilters].map(x=>x.toLowerCase()));list=list.filter(p=>sf.has((p.status||'').toLowerCase()));}
 if(searchQ){const q=searchQ.toLowerCase();list=list.filter(p=>p.name.toLowerCase().includes(q)||(p.pid||'').toLowerCase().includes(q)||(p.assignee||'').toLowerCase().includes(q)||(p.ubName||'').toLowerCase().includes(q));}
 list.sort((a,b)=>{
@@ -1364,7 +1661,16 @@ thead.innerHTML='\x3cth>Account\x3c/th>\x3cth>Project ID\x3c/th>\x3cth>Type\x3c/
 pgDiv.style.display='none';
 if(!list.length){tbody.innerHTML='';empty.style.display='block';updateMetrics();return;}
 empty.style.display='none';
-tbody.innerHTML=list.map(c=>(canEdit?'\x3ctr class="dr" onclick="showCorDetail('+c.id+')" style="cursor:pointer">':'\x3ctr class="dr" style="cursor:default">')+'\x3ctd>\x3cdiv style="font-weight:500">'+c.name+'\x3c/div>'+(c.pid?'\x3cdiv style="font-size:13px;color:var(--text2)">'+c.pid+'\x3c/div>':'')+'\x3c/td>\x3ctd>'+typeBadge(c.type,'')+'\x3c/td>\x3ctd>\x3cdiv style="display:flex;align-items:center;gap:6px">\x3cspan class="avatar">'+initials(c.assignee)+'\x3c/span>\x3cspan style="font-size:14px">'+(c.assignee||'--')+'\x3c/span>\x3c/div>\x3c/td>\x3ctd>\x3cspan class="badge b-COR">'+c.corType+'\x3c/span>\x3c/td>\x3ctd style="font-size:14px">'+fmtDate(c.corDue)+'\x3c/td>\x3ctd>'+statusBadge(c.status)+'\x3c/td>\x3ctd style="font-size:11px;color:var(--text2);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+((c.corNotes||'').slice(0,55))+'\x3c/td>\x3ctd onclick="event.stopPropagation()">\x3cdiv class="action-row">'+(canEdit?'\x3cbutton style="font-size:12px;padding:4px 10px;border-radius:var(--r);cursor:pointer;border:none;background:#16a34a;color:#fff;font-weight:600;box-shadow:0 2px 4px rgba(22,163,74,0.4),inset 0 1px 0 rgba(255,255,255,0.2)" onclick="resolveCorrection('+c.id+')">'+(c.status==='Resolved'?'Reopen':'Resolve')+'\x3c/button>':'')+''+(canEdit&&pinUnlocked?'\x3cbutton style="font-size:12px;padding:4px 10px;border-radius:var(--r);cursor:pointer;border:none;background:#dc2626;color:#fff;font-weight:600;box-shadow:0 2px 4px rgba(220,38,38,0.4),inset 0 1px 0 rgba(255,255,255,0.2)" onclick="deleteCor('+c.id+')">Delete\x3c/button>':'')+'\x3c/div>\x3c/td>\x3c/tr>').join('');
+tbody.innerHTML=list.map(c=>{
+const isCl=String(c.id).startsWith('cl_');
+const resolveCall=isCl
+  ? (function(){var p=projects.find(function(x){return String(x.id)===String(c.linkedProjectId);});var idx=p&&p.corList?p.corList.findIndex(function(x){return (x.corNotes||'')===(c.corNotes||'')&&(x.corType||'')===(c.corType||'');}): -1;return idx>-1?'resolveCorInPanel('+c.linkedProjectId+','+idx+')':'resolveCorInPanel('+c.linkedProjectId+',0)';})()
+  : 'resolveCorrection('+c.id+')';
+const deleteCall=isCl
+  ? (function(){var p=projects.find(function(x){return String(x.id)===String(c.linkedProjectId);});var idx=p&&p.corList?p.corList.findIndex(function(x){return (x.corNotes||'')===(c.corNotes||'')&&(x.corType||'')===(c.corType||'');}): -1;return idx>-1?'deleteCorInPanel('+c.linkedProjectId+','+idx+')':'deleteCorInPanel('+c.linkedProjectId+',0)';})()
+  : 'deleteCor('+c.id+')';
+return (canEdit?'\x3ctr class="dr" onclick="showCorDetail(\''+c.id+'\')" style="cursor:pointer">':'\x3ctr class="dr" style="cursor:default">')+'\x3ctd>\x3cdiv style="font-weight:500">'+c.name+'\x3c/div>\x3c/td>\x3ctd style="font-size:14px;color:var(--text2)">'+(c.pid||'--')+'\x3c/td>\x3ctd>'+typeBadge(c.type,'')+'\x3c/td>\x3ctd>\x3cdiv style="display:flex;align-items:center;gap:6px">\x3cspan class="avatar">'+initials(c.assignee)+'\x3c/span>\x3cspan style="font-size:14px">'+(c.assignee||'--')+'\x3c/span>\x3c/div>\x3c/td>\x3ctd>\x3cspan class="badge b-COR">'+c.corType+'\x3c/span>\x3c/td>\x3ctd style="font-size:14px">'+fmtDate(c.corDue)+'\x3c/td>\x3ctd>'+statusBadge(c.status)+'\x3c/td>\x3ctd style="font-size:11px;color:var(--text2);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+((c.corNotes||'').slice(0,55))+'\x3c/td>\x3ctd onclick="event.stopPropagation()">\x3cdiv class="action-row">'+(canEdit?'\x3cbutton style="font-size:12px;padding:4px 10px;border-radius:var(--r);cursor:pointer;border:none;background:#16a34a;color:#fff;font-weight:600;box-shadow:0 2px 4px rgba(22,163,74,0.4),inset 0 1px 0 rgba(255,255,255,0.2)" onclick="'+resolveCall+'">'+(c.status==='Resolved'?'Reopen':'Resolve')+'\x3c/button>':'')+''+(canEdit&&pinUnlocked?'\x3cbutton style="font-size:12px;padding:4px 10px;border-radius:var(--r);cursor:pointer;border:none;background:#dc2626;color:#fff;font-weight:600;box-shadow:0 2px 4px rgba(220,38,38,0.4),inset 0 1px 0 rgba(255,255,255,0.2)" onclick="'+deleteCall+'">Delete\x3c/button>':'')+'\x3c/div>\x3c/td>\x3c/tr>';
+}).join('');
 updateMetrics();renderAlerts();return;
 }
 const isRebate=mainTab==='Rebate',isHP=mainTab==='HP',isIC=mainTab==='IC',isCOC=mainTab==='COC',isAll=mainTab==='all';
@@ -1527,6 +1833,20 @@ highlightMetric('pending');
 render();
 return;
 }
+if(type==='hp45'){
+hideQFRows();
+const allBtn=document.querySelector('#main-tabs .tab:nth-child(1)');
+setMainTab('all',allBtn,true);
+filterType='hp45';
+document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+const hp45btn=document.getElementById('hp45-filter-btn');
+if(hp45btn)hp45btn.classList.add('active');
+statusFilters=new Set();
+updateStatusPills();
+highlightMetric(type);
+render();
+return;
+}
 const allBtn=document.querySelector('#main-tabs .tab:nth-child(1)');
 setMainTab('all',allBtn,true);
 hideQFRows();
@@ -1604,6 +1924,8 @@ set('m-att',attAll);
 set('m-pending-all',pendingIC+pendingCOC+pendingRebate);
 set('m-nys',nys);
 set('m-cor',openCorsAll);
+const hp45Count=projects.filter(p=>p.hpEnrolled&&daysSince(p.hpEnrolled)>=45).length;
+set('m-hp45',hp45Count);
 const nysIC=projects.filter(p=>p.type==='IC'&&(p.status||'').toLowerCase()==='not yet submitted').length;
 const nysCOC=projects.filter(p=>p.type==='COC'&&(p.status||'').toLowerCase()==='not yet submitted').length;
 const nysRebate=projects.filter(p=>p.type==='Rebate'&&(p.status||'').toLowerCase()==='not yet submitted').length;
@@ -1611,7 +1933,6 @@ set('qf-nys-ic',nysIC);set('qf-nys-coc',nysCOC);set('qf-nys-rebate',nysRebate);
 set('qf-pend-ic',pendingIC);set('qf-pend-coc',pendingCOC);set('qf-pend-rebate',pendingRebate);
 }
 function renderAlerts(){
-const newRebates=projects.filter(p=>p.type==='Rebate'&&(p.status||'').toLowerCase()==='not yet submitted');
 const el=document.getElementById('alerts');
 if(el)el.innerHTML='';
 }
@@ -1629,9 +1950,14 @@ var crf=document.getElementById('cor-report-from');
 var crt=document.getElementById('cor-report-to');
 if(crf)crf.value=d30.toISOString().slice(0,10);
 if(crt)crt.value=now.toISOString().slice(0,10);
+var rpf=document.getElementById('rebatepay-from');
+var rpt2=document.getElementById('rebatepay-to');
+if(rpf)rpf.value=d30.toISOString().slice(0,10);
+if(rpt2)rpt2.value=now.toISOString().slice(0,10);
 switchReportTab(tab||'weekly');
 renderWeekly();
 renderReport();
+if(tab==='hp45')renderHP45Report();
 document.getElementById('report-combined-modal').style.display='flex';
 }
 function closeReportCombined(){document.getElementById('report-combined-modal').style.display='none';}
@@ -1640,17 +1966,19 @@ function closeWeeklyReport(){closeReportCombined();}
 function openReportModal(){openReportCombined('monthly');}
 function closeReportModal(){closeReportCombined();}
 function switchReportTab(tab){
-['weekly','monthly','corrections'].forEach(function(t){
+['weekly','monthly','corrections','rebatepay','hp45'].forEach(function(t){
 var panel=document.getElementById('rpt-panel-'+t);
 var btn=document.getElementById('rpt-tab-'+t);
 if(!panel||!btn)return;
 var active=t===tab;
 panel.style.display=active?'block':'none';
 btn.style.borderBottomColor=active?'var(--text)':'transparent';
-btn.style.color=active?'var(--text)':'var(--text2)';
+btn.style.color=active?(t==='rebatepay'?'var(--st)':t==='hp45'?'var(--dt)':'var(--text)'):'var(--text2)';
 btn.style.fontWeight=active?'500':'400';
 });
 if(tab==='corrections')renderCorReport();
+if(tab==='rebatepay')renderRebatePayReport();
+if(tab==='hp45')renderHP45Report();
 }
 function getDateRange(fromId,toId){
 const f=document.getElementById(fromId).value;
@@ -1752,7 +2080,7 @@ COC:['Not yet Submitted','Pending IC Approval','Pending Submission','Submitted',
 Rebate:['Not yet Submitted','Submitted','Saved','In Automated Review','Manual Review Required','More Information Required','Peer Review','Site Inspection','Sent for Payment','Ready For Payment','Payment Processed','Pending Interconnection','On Hold','Denied','Withdrawn'],
 HP:['Not yet Submitted','Enrolled','On Hold','Withdrawn'],
 };
-const PM_LIST=['Mary Ann Sante','Marielle Morla','Allaiza Velasquez','Angelica Capili','Dane Fullos','Francheska Alvarez','Genneva Arguelles','Liza Cequena','May Contestable'];
+const PM_LIST=['Mary Ann Sante','Marielle Morla','Allaiza Velasquez','Angelica Capili','Dane Fullos','Francheska Alvarez','Genneva Arguelles','Liza Cequena','May Contestable','Lester Belarmino','Dianne Orias','Ara Pascual'];
 function filterPMList(q){
 const dd=document.getElementById('pm-dropdown');
 const matches=q?PM_LIST.filter(n=>n.toLowerCase().includes(q.toLowerCase())):PM_LIST;
@@ -1780,11 +2108,11 @@ if(!opts.includes(prev))sel.value=opts[0];
 }
 function toggleCorF(){document.getElementById('cor-fields').style.display=document.getElementById('f-has-cor').checked?'block':'none';}
 function clearModal(){
-['f-name','f-pid','f-address','f-received','f-deadline','f-notes','f-ubname','f-pm','f-ic-hp-link','f-ic-approved','f-coc-approved','f-hp-enrolled','f-hp-ic-link','f-rebate-amount','f-rebate-program','f-rebate-hp-date','f-cor-due','f-cor-received','f-cor-notes','f-linked-ic-id','f-linked-ic-search'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+['f-name','f-pid','f-address','f-received','f-deadline','f-notes','f-ubname','f-pm','f-ic-hp-link','f-ic-approved','f-coc-approved','f-payment-status-date','f-coc-hp-enrolled','f-hp-enrolled','f-hp-ic-link','f-rebate-amount','f-rebate-program','f-rebate-hp-date','f-cor-due','f-cor-received','f-cor-notes','f-linked-ic-id','f-linked-ic-search','f-linked-coc-id','f-linked-coc-search'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
 document.getElementById('f-type').value='IC';document.getElementById('f-subtype').value='SFA';
 document.getElementById('f-status').value='Not yet Submitted';document.getElementById('f-assignee').value='Althesa Ancheta';
 document.getElementById('f-cor-type').value='Missing Information';
-document.getElementById('f-has-cor').checked=false;toggleCorF();onTypeChange();if(typeof clearLinkedIC==='function')clearLinkedIC();
+document.getElementById('f-has-cor').checked=false;toggleCorF();onTypeChange();if(typeof clearLinkedIC==='function')clearLinkedIC();if(typeof clearLinkedCOC==='function')clearLinkedCOC();
 }
 function openAddModal(){editId=null;clearModal();document.getElementById('modal-title').textContent='Add New Project';document.getElementById('modal').style.display='flex';setTimeout(()=>document.getElementById('f-name').focus(),50);}
 function closeModal(){document.getElementById('modal').style.display='none';}
@@ -1814,7 +2142,11 @@ document.getElementById('f-pm').value=p.pmName||'';
 document.getElementById('f-ic-hp-link').value=p.icHpLink||'';
 document.getElementById('f-ic-approved').value=p.icApprovedDate||'';
 document.getElementById('f-coc-approved').value=p.cocApprovedDate||'';
+const psdEl=document.getElementById('f-payment-status-date');
+if(psdEl)psdEl.value=p.paymentStatusDate||'';
 if(p.type==='COC'){
+  const cocHpEl=document.getElementById('f-coc-hp-enrolled');
+  if(cocHpEl)cocHpEl.value=p.hpEnrolled||'';
   clearLinkedIC();
   if(p.linkedICProjectId){
     const linkedIC=projects.find(x=>x.id===parseInt(p.linkedICProjectId));
@@ -1828,6 +2160,16 @@ if(p.type==='COC'){
 document.getElementById('f-hp-enrolled').value=p.hpEnrolled||'';
 document.getElementById('f-hp-ic-link').value=p.hpIcLink||'';
 document.getElementById('f-rebate-amount').value=p.rebateAmount||'';
+if(p.type==='Rebate'){
+  clearLinkedCOC();
+  if(p.linkedCOCProjectId){
+    const linkedCOC=projects.find(x=>x.id===parseInt(p.linkedCOCProjectId));
+    if(linkedCOC)selectLinkedCOC(linkedCOC.id);
+  } else if(p.pid){
+    const suggested=projects.find(x=>x.type==='COC'&&x.pid&&x.pid===p.pid);
+    if(suggested)selectLinkedCOC(suggested.id);
+  }
+}
 document.getElementById('f-rebate-program').value=p.rebateProgram||'';
 document.getElementById('f-rebate-hp-date').value=p.hpEnrolled||'';
 const existingCorsEl=document.getElementById('f-existing-cors');
@@ -1905,6 +2247,31 @@ document.getElementById('modal').style.display='flex';
 pendingApprovalSave=null;
 }
 }
+var pendingPaymentSave=null;
+function showPaymentDatePopup(statusLabel,onConfirm){
+pendingPaymentSave=onConfirm;
+document.getElementById('payment-status-label').textContent=statusLabel;
+document.getElementById('payment-date-input').value=new Date().toISOString().slice(0,10);
+document.getElementById('payment-date-modal').style.display='flex';
+setTimeout(()=>document.getElementById('payment-date-input').focus(),50);
+}
+function confirmPaymentDate(){
+const date=document.getElementById('payment-date-input').value;
+if(!date){
+document.getElementById('payment-date-input').style.borderColor='var(--dt)';
+showToast('Payment status date is required. Please enter the date.');return;
+}
+document.getElementById('f-payment-status-date').value=date;
+document.getElementById('payment-date-modal').style.display='none';
+if(pendingPaymentSave){pendingPaymentSave();pendingPaymentSave=null;}
+}
+function cancelPaymentDate(){
+document.getElementById('payment-date-modal').style.display='none';
+if(pendingPaymentSave){
+document.getElementById('modal').style.display='flex';
+pendingPaymentSave=null;
+}
+}
 function searchLinkedIC(q){
   const dd=document.getElementById('ic-link-dropdown');
   if(!q||q.length<2){dd.style.display='none';return;}
@@ -1933,6 +2300,34 @@ function clearLinkedIC(){
   document.getElementById('f-linked-ic-search').value='';
   document.getElementById('f-linked-ic-display').style.display='none';
 }
+function searchLinkedCOC(q){
+  const dd=document.getElementById('coc-link-dropdown');
+  if(!q||q.length<2){dd.style.display='none';return;}
+  const ql=q.toLowerCase();
+  const matches=projects.filter(p=>p.type==='COC'&&(
+    (p.name||'').toLowerCase().includes(ql)||(p.pid||'').toLowerCase().includes(ql)
+  )).slice(0,8);
+  if(!matches.length){dd.innerHTML='<div style="padding:10px 12px;font-size:13px;color:var(--text3)">No COC projects found</div>';dd.style.display='block';return;}
+  dd.innerHTML=matches.map(p=>`<div onclick="selectLinkedCOC(${p.id})" style="padding:8px 12px;cursor:pointer;font-size:13px;border-bottom:0.5px solid var(--border)" onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''">
+    <div style="font-weight:500">${p.name}</div>
+    <div style="font-size:11px;color:var(--text2)">${p.pid?'ComEd ID: '+p.pid+' · ':''}COC ${p.cocApprovedDate?'Approved: '+p.cocApprovedDate:'Status: '+p.status}</div>
+  </div>`).join('');
+  dd.style.display='block';
+}
+function selectLinkedCOC(id){
+  const p=projects.find(x=>x.id===id);if(!p)return;
+  document.getElementById('f-linked-coc-id').value=id;
+  document.getElementById('f-linked-coc-search').value=p.name+(p.pid?' ('+p.pid+')':'');
+  document.getElementById('coc-link-dropdown').style.display='none';
+  const disp=document.getElementById('f-linked-coc-display');
+  disp.innerHTML='🔗 <strong>'+p.name+'</strong>'+(p.pid?' · ComEd ID: '+p.pid:'')+(p.cocApprovedDate?'<span style="margin-left:8px;color:var(--st);font-size:12px">✓ COC Approved: '+p.cocApprovedDate+'</span>':'<span style="margin-left:8px;color:var(--text3);font-size:12px">Status: '+p.status+'</span>')+'<button onclick="clearLinkedCOC()" style="margin-left:8px;font-size:11px;padding:1px 6px;border-radius:4px;border:0.5px solid var(--border2);background:transparent;cursor:pointer;color:var(--text2)">✕ Remove</button>';
+  disp.style.display='block';
+}
+function clearLinkedCOC(){
+  document.getElementById('f-linked-coc-id').value='';
+  document.getElementById('f-linked-coc-search').value='';
+  document.getElementById('f-linked-coc-display').style.display='none';
+}
 function saveProject(){
 const name=document.getElementById('f-name').value.trim();
 const pid=document.getElementById('f-pid').value.trim();
@@ -1944,7 +2339,7 @@ const status=document.getElementById('f-status').value;
 const errors=[];
 if(!name)errors.push('Customer Name');
 
-if(!pmName)errors.push('PM Name');
+if(!pmName&&t!=='Rebate')errors.push('PM Name');
 
 if(errors.length){
 showToast('Required: '+errors.join(', '));
@@ -1960,6 +2355,16 @@ document.getElementById('modal').style.display='none';
 showApprovalDatePopup(t,()=>doSaveProject());
 return;
 }
+const PAY_STATUSES=['Sent for Payment','Ready For Payment','Payment Processed'];
+const isPayStatus=t==='Rebate'&&PAY_STATUSES.includes(status);
+const existingForCheck=editId?projects.find(x=>x.id===editId):null;
+const prevStatus=existingForCheck?existingForCheck.status:'';
+const needsPayDate=isPayStatus&&status!==prevStatus&&!document.getElementById('f-payment-status-date').value;
+if(needsPayDate){
+document.getElementById('modal').style.display='none';
+showPaymentDatePopup(status,()=>doSaveProject());
+return;
+}
 doSaveProject();
 }
 function doSaveProject(){
@@ -1970,7 +2375,7 @@ const status=document.getElementById('f-status').value;
 const RESOLVED=['approved','payment processed','sent for payment','ready for payment','enrolled'];
 const isResolved=RESOLVED.some(s=>status.toLowerCase()===s);
 const hpEnrollDate=document.getElementById('f-ic-hp-link')?document.getElementById('f-ic-hp-link').value:'';
-const hpDate=t==='HP'?document.getElementById('f-hp-enrolled').value:t==='Rebate'?document.getElementById('f-rebate-hp-date').value:hpEnrollDate;
+const hpDate=t==='HP'?document.getElementById('f-hp-enrolled').value:t==='Rebate'?document.getElementById('f-rebate-hp-date').value:t==='COC'?document.getElementById('f-coc-hp-enrolled').value:hpEnrollDate;
 const existing=editId?projects.find(x=>x.id===editId):null;
 let corList=existing&&existing.corList?[...existing.corList]:
 (existing&&existing.corNotes?[{corType:existing.corType,corReceived:existing.corReceived,corDue:existing.corDue,corNotes:existing.corNotes,status:'Open',created:existing.created}]:[]);
@@ -1987,10 +2392,26 @@ created:new Date().toISOString().slice(0,10)
 if(isResolved)corList=corList.map(c=>({...c,status:'Resolved'}));
 const hasCor=!isResolved&&corList.some(c=>c.status!=='Resolved');
 const latestCor=corList.filter(c=>c.status!=='Resolved').slice(-1)[0]||corList.slice(-1)[0]||{};
-const p={id:editId||nextId++,name,pid:document.getElementById('f-pid').value.trim(),address:document.getElementById('f-address').value.trim(),type:t,subtype:document.getElementById('f-subtype').value,status,assignee:document.getElementById('f-assignee').value,received:document.getElementById('f-received').value,deadline:document.getElementById('f-deadline').value,notes:document.getElementById('f-notes').value.trim(),ubName:document.getElementById('f-ubname').value.trim(),pmName:document.getElementById('f-pm').value.trim(),hasCor,corList,corType:latestCor.corType||'',corReceived:latestCor.corReceived||'',corDue:latestCor.corDue||'',corNotes:latestCor.corNotes||'',icHpLink:'',icApprovedDate:document.getElementById('f-ic-approved').value,cocApprovedDate:document.getElementById('f-coc-approved').value,linkedICProjectId:document.getElementById('f-linked-ic-id').value?parseInt(document.getElementById('f-linked-ic-id').value)||document.getElementById('f-linked-ic-id').value:'',hpEnrolled:hpDate,hpIcLink:'',hpRebateLink:'',rebateHpLink:'',rebateAmount:document.getElementById('f-rebate-amount').value,rebateProgram:document.getElementById('f-rebate-program').value.trim(),activityLog:existing?existing.activityLog||[]:[],created:existing?existing.created:new Date().toISOString().slice(0,10),updated:new Date().toISOString().slice(0,10),lastEditedBy:myViewerName||'Unknown',lastEditedAt:new Date().toISOString()};
+const p={id:editId||nextId++,name,pid:document.getElementById('f-pid').value.trim(),address:document.getElementById('f-address').value.trim(),type:t,subtype:document.getElementById('f-subtype').value,status,assignee:document.getElementById('f-assignee').value,received:document.getElementById('f-received').value,deadline:document.getElementById('f-deadline').value,notes:document.getElementById('f-notes').value.trim(),ubName:document.getElementById('f-ubname').value.trim(),pmName:document.getElementById('f-pm').value.trim(),hasCor,corList,corType:latestCor.corType||'',corReceived:latestCor.corReceived||'',corDue:latestCor.corDue||'',corNotes:latestCor.corNotes||'',icHpLink:'',icApprovedDate:document.getElementById('f-ic-approved').value,cocApprovedDate:document.getElementById('f-coc-approved').value,linkedICProjectId:document.getElementById('f-linked-ic-id').value?parseInt(document.getElementById('f-linked-ic-id').value)||document.getElementById('f-linked-ic-id').value:'',linkedCOCProjectId:document.getElementById('f-linked-coc-id').value?parseInt(document.getElementById('f-linked-coc-id').value)||document.getElementById('f-linked-coc-id').value:'',hpEnrolled:hpDate,hpIcLink:'',hpRebateLink:'',rebateHpLink:'',rebateAmount:document.getElementById('f-rebate-amount').value,rebateProgram:document.getElementById('f-rebate-program').value.trim(),paymentStatusDate:(()=>{const el=document.getElementById('f-payment-status-date');return el?el.value:'';})(),activityLog:existing?existing.activityLog||[]:[],created:existing?existing.created:new Date().toISOString().slice(0,10),updated:new Date().toISOString().slice(0,10),lastEditedBy:myViewerName||'Unknown',lastEditedAt:new Date().toISOString()};
 if(editId){const i=projects.findIndex(x=>x.id===editId);if(i>-1)projects[i]=p;}
 else projects.push(p);
-saveProjectToSupabase(p).catch(()=>{});
+window._pollLockedUntil = Date.now() + 300000; // Lock poll for 5 min immediately (before any async)
+save();closeModal();render();
+saveProjectToSupabase(p).then(()=>{
+  lockPoll(); // Reset the 5-min window from time of confirmed cloud save
+  showToast('✅ Project saved to cloud.');
+}).catch((err)=>{
+  console.error('Supabase save failed:',err);
+  showToast('⚠️ Saved locally but cloud sync failed. Retrying...',4000);
+  setTimeout(()=>{
+    saveProjectToSupabase(p).then(()=>{
+      lockPoll();
+      showToast('✅ Cloud sync recovered successfully.');
+    }).catch(()=>{
+      showToast('❌ Cloud sync failed twice. Your data is saved locally — please keep this tab open.',8000);
+    });
+  }, 5000);
+});
 if(addingNewCor&&!isResolved&&editId){
 const newEntry=corList[corList.length-1];
 if(newEntry){
@@ -2041,7 +2462,9 @@ function deleteCor(id){
     // Find the correction from the last rendered list
     const c=_lastCorList&&_lastCorList.find(x=>String(x.id)===String(id));
     if(!c){showToast('Correction not found.');return;}
-    deleteCorInPanel(c.linkedProjectId,encodeURIComponent(c.corNotes||''),encodeURIComponent(c.corType||''));
+    const p=projects.find(x=>String(x.id)===String(c.linkedProjectId));
+    const idx=p&&p.corList?p.corList.findIndex(x=>(x.corNotes||'')===(c.corNotes||'')&&(x.corType||'')===(c.corType||'')):-1;
+    deleteCorInPanel(c.linkedProjectId, idx>-1?idx:0);
     return;
   }
   showDeleteConfirm('this correction',()=>{
@@ -2176,40 +2599,74 @@ save();closeCorModal();render();
 showToast('Correction logged successfully.');
 }
 function resolveCorrection(id){
-const c=corrections.find(x=>x.id===id);
-if(!c)return;
-c.status=c.status==='Resolved'?'Open':'Resolved';
-if(c.linkedProjectId){
+if(String(id).startsWith('cl_')){
+const c=_lastCorList&&_lastCorList.find(x=>String(x.id)===String(id));
+if(!c){showToast('Correction not found.');return;}
 const p=projects.find(x=>x.id===parseInt(c.linkedProjectId));
-if(p&&p.corList){
-const match=p.corList.find(x=>x.corNotes===c.corNotes&&x.corReceived===c.corReceived);
-if(match)match.status=c.status;
+if(!p){showToast('Project not found.');return;}
+if(!p.corList)p.corList=[];
+const ci=p.corList.findIndex(x=>(x.corNotes||'').trim()===(c.corNotes||'').trim()&&(x.corType||'')===(c.corType||''));
+const curStatus=ci>-1?p.corList[ci].status:'Open';
+const toggledStatus=curStatus==='Resolved'?'Open':'Resolved';
+if(ci>-1){p.corList[ci].status=toggledStatus;}
+let sc=corrections.find(x=>parseInt(x.linkedProjectId)===p.id&&(x.corNotes||'').trim()===(c.corNotes||'').trim()&&(x.corType||'')===(c.corType||''));
+if(!sc){
+sc={id:nextCorId++,name:p.name,pid:p.pid,type:p.type,assignee:p.assignee,corType:c.corType,corReceived:c.corReceived,corDue:c.corDue,corNotes:c.corNotes,status:toggledStatus,linkedProjectId:String(p.id),created:c.corReceived||new Date().toISOString().slice(0,10)};
+corrections.push(sc);
+saveCorrectionToSupabase(sc).catch(()=>{});
+}else{sc.status=toggledStatus;saveCorrectionToSupabase(sc).catch(()=>{});}
+p.lastEditedBy=myViewerName||'Unknown';p.lastEditedAt=new Date().toISOString();
+saveProjectToSupabase(p).then(function(){save();render();showToast(toggledStatus==='Resolved'?'Marked as resolved!':'Reopened.');}).catch(function(){save();render();});
+return;
+}
+// Normalize id — HTML onclick passes strings, stored ids may be numbers
+const numId=parseInt(id);
+const c=corrections.find(x=>x.id===numId||x.id===id||String(x.id)===String(id));
+if(!c){showToast('Correction not found.');return;}
+c.status=c.status==='Resolved'?'Open':'Resolved';
+// Find linked project — try by linkedProjectId first, then fall back to name/pid match
+let p=null;
+if(c.linkedProjectId){
+  p=projects.find(x=>x.id===parseInt(c.linkedProjectId)||String(x.id)===String(c.linkedProjectId));
+}
+// If not found by id, try matching by name or pid (handles old records with wrong linkedProjectId)
+if(!p&&c.name){
+  p=projects.find(x=>x.name===c.name&&(x.type===c.type||!c.type));
+}
+if(!p&&c.pid){
+  p=projects.find(x=>x.pid===c.pid&&(x.type===c.type||!c.type));
 }
 if(p){
-const allResolved=corrections.filter(x=>x.linkedProjectId===c.linkedProjectId).every(x=>x.status==='Resolved');
-if(allResolved&&p.corList){
-const listAllResolved=p.corList.every(x=>x.status==='Resolved');
-if(listAllResolved)p.hasCor=false;
+  // Fix linkedProjectId on the correction so future lookups work
+  if(!c.linkedProjectId||String(c.linkedProjectId)!==String(p.id)){
+    c.linkedProjectId=String(p.id);
+  }
+  if(!p.corList)p.corList=[];
+  const match=p.corList.find(x=>(x.corNotes||'').trim()===(c.corNotes||'').trim()&&(x.corType||'')===(c.corType||''));
+  if(match){match.status=c.status;}
+  const allResolved=corrections.filter(x=>String(x.linkedProjectId)===String(p.id)).every(x=>x.status==='Resolved');
+  if(allResolved&&p.corList){const listAllResolved=p.corList.every(x=>x.status==='Resolved');if(listAllResolved)p.hasCor=false;}
+  p.lastEditedBy=myViewerName||'Unknown';p.lastEditedAt=new Date().toISOString();
+  saveProjectToSupabase(p).catch(()=>{});
 }
-p.lastEditedBy=myViewerName||'Unknown';
-p.lastEditedAt=new Date().toISOString();
-saveProjectToSupabase(p).catch(()=>{});
-}
-}
-saveCorrectionToSupabase(c).then(function(){save();render();}).catch(function(){save();render();});
+saveCorrectionToSupabase(c).then(function(){save();render();showToast(c.status==='Resolved'?'Marked as resolved!':'Reopened.');}).catch(function(){save();render();});
 }
 function saveNote(){
 const text=document.getElementById('note-text').value.trim();if(!text)return;
-const p=projects.find(x=>x.id===detailId);if(!p)return;
+const p=projects.find(x=>String(x.id)===String(detailId));if(!p)return;
 if(!p.activityLog)p.activityLog=[];
-p.activityLog.push({text,author:document.getElementById('note-author').value,ts:new Date().toISOString()});
-p.lastEditedBy=myViewerName||'Unknown';p.lastEditedAt=new Date().toISOString();
-saveProjectToSupabase(p).catch(()=>{});
-document.getElementById('note-text').value='';save();showDetail(detailId);
+const authorName=myViewerName||document.getElementById('note-author').value;
+if(!authorName){showToast('Please enter your name first.');return;}
+p.activityLog.push({text,author:authorName,ts:new Date().toISOString()});
+p.lastEditedBy=authorName;p.lastEditedAt=new Date().toISOString();
+lockPoll();
+save();
+saveProjectToSupabase(p).then(()=>lockPoll()).catch(()=>{});
+document.getElementById('note-text').value='';showDetail(detailId);
 }
 function showDetail(id){
 id=parseInt(id)||id;
-const p=projects.find(x=>x.id===id);if(!p)return;
+const p=projects.find(x=>String(x.id)===String(id));if(!p)return;
 detailId=id;
 let hpSec='',rebSec='',corSec='',icSec='',cocSec='';
 const days=p.hpEnrolled?daysSince(p.hpEnrolled):null;
@@ -2220,7 +2677,9 @@ const pill=days!==null?'\x3cspan class="days-pill'+(days>90?' long':days>60?' me
 hpSec='\x3cdiv class="hp-section">\x3cdiv class="dl">HP Enrollment\x3c/div>\x3cdiv class="dv" style="margin-top:4px">Date: \x3cstrong>'+fmtDate(p.hpEnrolled)+'\x3c/strong>\x3c/div>\x3cdiv class="dv" style="margin-top:5px">Days since enrollment: '+pill+'\x3c/div>'+(p.hpIcLink?'\x3cdiv class="dv" style="font-size:12px;margin-top:4px">Linked IC: \x3cstrong>'+p.hpIcLink+'\x3c/strong>\x3c/div>':'')+'\x3c/div>';
 }
 if(p.rebateAmount){
-rebSec='\x3cdiv class="rebate-section">\x3cdiv class="dl">Rebate\x3c/div>\x3cdiv class="dv" style="font-size:20px;font-weight:600;margin-top:4px">'+fmtMoney(p.rebateAmount)+'\x3c/div>'+(p.rebateProgram?'\x3cdiv class="dv" style="font-size:12px;margin-top:3px">'+p.rebateProgram+'\x3c/div>':'')+'\x3c/div>';
+const linkedCOC=p.linkedCOCProjectId?projects.find(x=>x.id===parseInt(p.linkedCOCProjectId)):null;
+  const cocBadgeReb=linkedCOC?'\x3cdiv style="margin-top:8px;padding:8px 10px;background:var(--bg2);border-radius:var(--r);border:0.5px solid var(--border);cursor:pointer" onclick="showDetail('+linkedCOC.id+')">\x3cdiv style="font-size:11px;color:var(--text2);margin-bottom:3px">🔗 LINKED COC PROJECT\x3c/div>\x3cdiv style="font-size:13px;font-weight:500">'+linkedCOC.name+'\x3c/div>\x3cdiv style="font-size:12px;color:var(--text2);margin-top:2px">'+(linkedCOC.pid?'ComEd ID: '+linkedCOC.pid+' · ':'')+(linkedCOC.cocApprovedDate?'\x3cspan style="color:var(--st)">✓ COC Approved: '+fmtDate(linkedCOC.cocApprovedDate)+'\x3c/span>':'Status: '+linkedCOC.status)+'\x3c/div>\x3c/div>':'\x3cdiv style="margin-top:6px;font-size:12px;color:var(--text3)">No COC project linked — edit to add one\x3c/div>';
+  rebSec='\x3cdiv class="rebate-section">\x3cdiv class="dl">Rebate\x3c/div>\x3cdiv class="dv" style="font-size:20px;font-weight:600;margin-top:4px">'+fmtMoney(p.rebateAmount)+'\x3c/div>'+(p.rebateProgram?'\x3cdiv class="dv" style="font-size:12px;margin-top:3px">'+p.rebateProgram+'\x3c/div>':'')+'\x3c/div>'+cocBadgeReb;
 }
 if(p.type==='IC'){
   const linkedCOCs=projects.filter(x=>x.type==='COC'&&parseInt(x.linkedICProjectId)===p.id);
@@ -2230,7 +2689,9 @@ if(p.type==='IC'){
 if(p.type==='COC'){
   const linkedIC=p.linkedICProjectId?projects.find(x=>x.id===parseInt(p.linkedICProjectId)):null;
   const icBadge=linkedIC?'\x3cdiv style="margin-top:8px;padding:8px 10px;background:var(--bg2);border-radius:var(--r);border:0.5px solid var(--border);cursor:pointer" onclick="showDetail('+linkedIC.id+')">\x3cdiv style="font-size:11px;color:var(--text2);margin-bottom:3px">🔗 LINKED IC PROJECT\x3c/div>\x3cdiv style="font-size:13px;font-weight:500">'+linkedIC.name+'\x3c/div>\x3cdiv style="font-size:12px;color:var(--text2);margin-top:2px">'+(linkedIC.pid?'ComEd ID: '+linkedIC.pid+' · ':'')+(linkedIC.icApprovedDate?'\x3cspan style="color:var(--st)">✓ IC Approved: '+fmtDate(linkedIC.icApprovedDate)+'\x3c/span>':'Status: '+linkedIC.status)+'\x3c/div>\x3c/div>':'\x3cdiv style="margin-top:8px;font-size:12px;color:var(--text3)">No IC project linked — edit to add one\x3c/div>';
-  cocSec='\x3cdiv style="display:grid;grid-template-columns:1fr 1fr;gap:10px">\x3cdiv>\x3cdiv class="dl">Submitted\x3c/div>\x3cdiv class="dv">'+fmtDate(p.received)+'\x3c/div>\x3c/div>\x3cdiv>\x3cdiv class="dl">COC Approved\x3c/div>\x3cdiv class="dv">'+(fmtDate(p.cocApprovedDate)||'\x3cspan style="color:var(--text3)">Pending\x3c/span>')+'\x3c/div>\x3c/div>\x3c/div>'+icBadge;
+  const linkedRebates=projects.filter(x=>x.type==='Rebate'&&parseInt(x.linkedCOCProjectId)===p.id);
+  const rebateBadges=linkedRebates.length?linkedRebates.map(reb=>'\x3cdiv style="margin-top:6px;padding:8px 10px;background:var(--bg2);border-radius:var(--r);border:0.5px solid var(--border);cursor:pointer" onclick="showDetail('+reb.id+')">\x3cdiv style="font-size:11px;color:var(--text2);margin-bottom:3px">🔗 LINKED REBATE PROJECT\x3c/div>\x3cdiv style="font-size:13px;font-weight:500">'+reb.name+'\x3c/div>\x3cdiv style="font-size:12px;color:var(--text2);margin-top:2px">'+(reb.pid?'ComEd ID: '+reb.pid+' · ':'')+'Status: '+reb.status+'\x3c/div>\x3c/div>').join(''):'';
+  cocSec='\x3cdiv style="display:grid;grid-template-columns:1fr 1fr;gap:10px">\x3cdiv>\x3cdiv class="dl">Submitted\x3c/div>\x3cdiv class="dv">'+fmtDate(p.received)+'\x3c/div>\x3c/div>\x3cdiv>\x3cdiv class="dl">COC Approved\x3c/div>\x3cdiv class="dv">'+(fmtDate(p.cocApprovedDate)||'\x3cspan style="color:var(--text3)">Pending\x3c/span>')+'\x3c/div>\x3c/div>\x3c/div>'+icBadge+rebateBadges;
 }
 let allCors=[];
 if(p.corList&&p.corList.length){
@@ -2261,6 +2722,10 @@ corSec='<div class="cor-section">'+resolvedBanner+buildCorItems(allCors,projReso
 }
 document.getElementById('detail-content').innerHTML='\x3cdiv class="dp-h">\x3cdiv>\x3ch2>'+p.name+'\x3c/h2>'+(p.ubName?'\x3cdiv style="font-size:13px;color:var(--text2);margin-top:1px">UB: '+p.ubName+'\x3c/div>':'')+(p.pid?'\x3cdiv style="font-size:13px;color:var(--text2);margin-top:1px">ComEd ID: '+p.pid+'\x3c/div>':'')+(p.address?'\x3cdiv style="font-size:13px;color:var(--text2);margin-top:1px">📍 '+p.address+'\x3c/div>':'')+'\x3c/div>\x3cbutton class="close-btn" onclick="closeDetail()">&#x2715;\x3c/button>\x3c/div>\x3cdiv style="display:flex;gap:6px;flex-wrap:wrap">'+typeBadge(p.type,p.subtype)+' '+statusBadge(p.status)+'\x3c/div>\x3chr class="d-divider">\x3cdiv style="display:grid;grid-template-columns:1fr 1fr;gap:12px">\x3cdiv>\x3cdiv class="dl">Assignee\x3c/div>\x3cdiv style="display:flex;align-items:center;gap:6px;margin-top:3px">\x3cspan class="avatar">'+initials(p.assignee)+'\x3c/span>\x3cspan class="dv">'+(p.assignee||'--')+'\x3c/span>\x3c/div>\x3c/div>\x3cdiv>\x3cdiv class="dl">Deadline / Review\x3c/div>\x3cdiv class="dv">'+fmtDate(p.deadline)+(p.deadlineNote?'\x3cdiv style="font-size:11px;color:var(--wt);margin-top:2px">'+p.deadlineNote+'\x3c/div>':'')+'\x3c/div>\x3c/div>\x3c/div>'+icSec+cocSec+hpSec+rebSec+corSec+(p.notes?'\x3cdiv>\x3cdiv class="dl">Notes\x3c/div>\x3cdiv class="dv" style="font-size:12px;line-height:1.55;white-space:pre-wrap;margin-top:3px">'+p.notes.slice(0,600)+(p.notes.length>600?'...':'')+'\x3c/div>\x3c/div>':'')+'\x3chr class="d-divider">\x3cdiv>\x3cdiv class="dl" style="margin-bottom:8px">Activity Log ('+log.length+')\x3c/div>'+(!log.length?'\x3cdiv style="font-size:12px;color:var(--text3)">No notes yet.\x3c/div>':'')+'\x3cdiv class="activity-log">'+log.slice().reverse().map(e=>'\x3cdiv class="ae">\x3cdiv class="ae-meta">'+e.author+' &middot; '+new Date(e.ts).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'})+'\x3c/div>\x3cdiv class="ae-text">'+e.text+'\x3c/div>\x3c/div>').join('')+'\x3c/div>\x3c/div>\x3cdiv style="display:flex;gap:8px;margin-top:4px">\x3cbutton class="btn-s" style="flex:1;font-size:13px" onclick="editProject('+p.id+')">Edit project\x3c/button>\x3c/div>'+lastEditedSec;
 document.getElementById('note-input-area').style.display=canEdit?'block':'none';
+if(canEdit&&myViewerName){
+  const lbl=document.getElementById('note-author-label');
+  if(lbl)lbl.textContent='Saving note as: '+myViewerName;
+}
 document.getElementById('detail-panel').style.display='flex';
 }
 function showCorDetail(id){
@@ -2326,10 +2791,11 @@ heartbeatTimer=setInterval(()=>{
 registerViewer();
 },HEARTBEAT_MS);
 }
-var TEAM_NAMES=['veronica','althesa ancheta','joy completo','rachel gendrano','v'];
+var TEAM_NAMES=['veronica','althesa','joy','rachel','v'];
 function checkTeamName(val){
 const v=val.trim().toLowerCase();
-const isTeam=TEAM_NAMES.some(n=>v===n||v.startsWith(n.split(' ')[0].toLowerCase())&&v.length>=1);
+if(!v){const pwSection=document.getElementById('team-pw-section');if(pwSection)pwSection.style.display='none';return;}
+const isTeam=TEAM_NAMES.some(n=>v.includes(n)||n.includes(v)&&v.length>=2);
 const pwSection=document.getElementById('team-pw-section');
 if(pwSection)pwSection.style.display=isTeam?'block':'none';
 }
@@ -2349,10 +2815,13 @@ return;
 }
 if(errEl)errEl.style.display='none';
 const pw=pwInput?pwInput.value.trim():'';
-canEdit=(pw===TEAM_PASSWORD||pw===OWNER_PIN);
+canEdit=(pw===TEAM_PASSWORD||pw.toLowerCase()===TEAM_PASSWORD.toLowerCase()||pw===OWNER_PIN);
 myViewerName=name;
 myViewerId=genId();
 document.getElementById('name-prompt-modal').style.display='none';
+// Hide note-author select since we'll use the logged-in name automatically
+const noteAuthorRow=document.querySelector('.note-row select');
+if(noteAuthorRow)noteAuthorRow.style.display='none';
 applyEditMode();
 registerViewer();
 startHeartbeat();
@@ -2520,6 +2989,52 @@ return{name:t.label,rows};
 const from=document.getElementById('report-from').value;
 const to=document.getElementById('report-to').value;
 downloadXLS(buildXLSX(sheets),'monthly_report_'+from+'_to_'+to+'.xls');
+showToast('Exported successfully!');
+}
+function renderHP45Report(){
+const threshold=parseInt(document.getElementById('hp45-rpt-threshold')?.value||'45');
+const assigneeFilter=document.getElementById('hp45-rpt-assignee')?.value||'all';
+let list=projects.filter(p=>p.hpEnrolled&&daysSince(p.hpEnrolled)>=threshold);
+if(assigneeFilter!=='all')list=list.filter(p=>(p.assignee||'').toLowerCase().includes(assigneeFilter.toLowerCase()));
+list.sort((a,b)=>{const da=daysSince(a.hpEnrolled),db=daysSince(b.hpEnrolled);return(db||0)-(da||0);});
+const countEl=document.getElementById('hp45-rpt-count');
+if(countEl)countEl.textContent=list.length;
+const el=document.getElementById('hp45-rpt-content');
+if(!el)return;
+if(!list.length){el.innerHTML='<p style="color:var(--text2);font-size:13px;padding:1.5rem 0;text-align:center">No projects match this filter. 🎉</p>';return;}
+// Summary by assignee
+const ASSIGNEE_KEYS=['Joy','Althesa','Rachel'];
+function normalizeAssignee(a){const s=(a||'').trim();const m=ASSIGNEE_KEYS.find(k=>s.toLowerCase().includes(k.toLowerCase()));return m||s||'Unassigned';}
+const byAssignee={};
+list.forEach(p=>{const a=normalizeAssignee(p.assignee);if(!byAssignee[a])byAssignee[a]=[];byAssignee[a].push(p);});
+let html='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:1.25rem">';
+Object.entries(byAssignee).forEach(([a,items])=>{
+html+=`<div style="background:var(--dbg);border:0.5px solid var(--db);border-radius:var(--r);padding:10px 14px"><div style="font-size:11px;color:var(--dt);font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">${a}</div><div style="font-size:22px;font-weight:700;color:var(--dt)">${items.length}</div><div style="font-size:10px;color:var(--dt);opacity:.7">project${items.length!==1?'s':''}</div></div>`;
+});
+html+='</div>';
+html+='<div style="background:var(--bg);border:0.5px solid var(--border);border-radius:var(--r);overflow:hidden">';
+html+='<table style="width:100%;border-collapse:collapse">';
+html+='<thead><tr style="background:var(--bg2)"><th style="font-size:11px;font-weight:600;color:var(--text2);text-align:left;padding:9px 12px;border-bottom:0.5px solid var(--border);text-transform:uppercase;letter-spacing:.05em">Customer</th><th style="font-size:11px;font-weight:600;color:var(--text2);text-align:left;padding:9px 12px;border-bottom:0.5px solid var(--border);text-transform:uppercase;letter-spacing:.05em">Project ID</th><th style="font-size:11px;font-weight:600;color:var(--text2);text-align:left;padding:9px 12px;border-bottom:0.5px solid var(--border);text-transform:uppercase;letter-spacing:.05em">Assignee</th><th style="font-size:11px;font-weight:600;color:var(--text2);text-align:left;padding:9px 12px;border-bottom:0.5px solid var(--border);text-transform:uppercase;letter-spacing:.05em">Type</th><th style="font-size:11px;font-weight:600;color:var(--text2);text-align:left;padding:9px 12px;border-bottom:0.5px solid var(--border);text-transform:uppercase;letter-spacing:.05em">HP Enrolled</th><th style="font-size:11px;font-weight:600;color:var(--dt);text-align:center;padding:9px 12px;border-bottom:0.5px solid var(--border);text-transform:uppercase;letter-spacing:.05em">Days</th><th style="font-size:11px;font-weight:600;color:var(--text2);text-align:left;padding:9px 12px;border-bottom:0.5px solid var(--border);text-transform:uppercase;letter-spacing:.05em">Status</th></tr></thead><tbody>';
+list.forEach((p,i)=>{
+const days=daysSince(p.hpEnrolled);
+const pillClass=days>90?'long':days>60?'med':'';
+const bg=i%2===0?'var(--bg)':'var(--bg2)';
+html+=`<tr style="background:${bg}"><td style="padding:9px 12px;font-size:13px;font-weight:500;border-bottom:0.5px solid var(--border)">${p.name||'--'}</td><td style="padding:9px 12px;font-size:12px;color:var(--text2);border-bottom:0.5px solid var(--border)">${p.pid||'--'}</td><td style="padding:9px 12px;font-size:13px;border-bottom:0.5px solid var(--border)">${p.assignee||'--'}</td><td style="padding:9px 12px;border-bottom:0.5px solid var(--border)">${typeBadge(p.type,p.subtype)}</td><td style="padding:9px 12px;font-size:13px;border-bottom:0.5px solid var(--border)">${fmtDate(p.hpEnrolled)}</td><td style="padding:9px 12px;text-align:center;border-bottom:0.5px solid var(--border)"><span class="days-pill ${pillClass}">${days}d</span></td><td style="padding:9px 12px;border-bottom:0.5px solid var(--border)">${statusBadge(p.status)}</td></tr>`;
+});
+html+='</tbody></table></div>';
+el.innerHTML=html;
+}
+function exportHP45XLS(){
+const threshold=parseInt(document.getElementById('hp45-rpt-threshold')?.value||'45');
+const assigneeFilter=document.getElementById('hp45-rpt-assignee')?.value||'all';
+let list=projects.filter(p=>p.hpEnrolled&&daysSince(p.hpEnrolled)>=threshold);
+if(assigneeFilter!=='all')list=list.filter(p=>(p.assignee||'').toLowerCase().includes(assigneeFilter.toLowerCase()));
+list.sort((a,b)=>(daysSince(b.hpEnrolled)||0)-(daysSince(a.hpEnrolled)||0));
+if(!list.length){showToast('No projects to export.');return;}
+const headers=['Customer Name','Project ID','Assignee','Type','Subtype','HP Enrolled Date','Days Enrolled','Status','Address','Notes'];
+const rows=list.map(p=>[p.name||'',p.pid||'',p.assignee||'',TL[p.type]||p.type||'',p.subtype||'',p.hpEnrolled||'',daysSince(p.hpEnrolled)||'',p.status||'',p.address||'',p.notes||'']);
+const xml=buildXLSX([{name:'HP Follow-Up',rows:[headers,...rows]}]);
+downloadXLS(xml,'hp_followup_45days_'+new Date().toISOString().slice(0,10)+'.xls');
 showToast('Exported successfully!');
 }
 load();updateStatusDropdown();render();applyEditMode();
