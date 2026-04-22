@@ -1641,7 +1641,7 @@ if(filterType==='corrections')list=list.filter(p=>needsAttention(p));
 if(filterType==='joy')list=list.filter(p=>(p.assignee||'').toLowerCase().includes('joy'));
 if(filterType==='althesa')list=list.filter(p=>(p.assignee||'').toLowerCase().includes('althesa'));
 if(filterType==='rachel')list=list.filter(p=>(p.assignee||'').toLowerCase().includes('rachel'));
-if(filterType==='hp45')list=list.filter(p=>p.hpEnrolled&&daysSince(p.hpEnrolled)>=45);
+if(filterType==='hp45'){const _hp45paid=new Set(['sent for payment','ready for payment','payment processed']);list=list.filter(p=>p.hpEnrolled&&daysSince(p.hpEnrolled)>=45&&!_hp45paid.has((p.status||'').toLowerCase()));}
 if(statusFilters.size>0){const sf=new Set([...statusFilters].map(x=>x.toLowerCase()));list=list.filter(p=>sf.has((p.status||'').toLowerCase()));}
 if(searchQ){const q=searchQ.toLowerCase();list=list.filter(p=>p.name.toLowerCase().includes(q)||(p.pid||'').toLowerCase().includes(q)||(p.assignee||'').toLowerCase().includes(q)||(p.ubName||'').toLowerCase().includes(q));}
 list.sort((a,b)=>{
@@ -1953,7 +1953,8 @@ set('m-att',attAll);
 set('m-pending-all',pendingIC+pendingCOC+pendingRebate);
 set('m-nys',nys);
 set('m-cor',openCorsAll);
-const hp45Count=projects.filter(p=>p.hpEnrolled&&daysSince(p.hpEnrolled)>=45).length;
+const HP45_PAID=new Set(['sent for payment','ready for payment','payment processed']);
+const hp45Count=projects.filter(p=>p.hpEnrolled&&daysSince(p.hpEnrolled)>=45&&!HP45_PAID.has((p.status||'').toLowerCase())).length;
 set('m-hp45',hp45Count);
 const nysIC=projects.filter(p=>p.type==='IC'&&(p.status||'').toLowerCase()==='not yet submitted').length;
 const nysCOC=projects.filter(p=>p.type==='COC'&&(p.status||'').toLowerCase()==='not yet submitted').length;
