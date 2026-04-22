@@ -3278,6 +3278,7 @@ html+='<th style="font-size:11px;font-weight:600;color:var(--text2);text-align:l
 html+='<th style="font-size:11px;font-weight:600;color:var(--text2);text-align:left;padding:9px 12px;border-bottom:0.5px solid var(--border);text-transform:uppercase;letter-spacing:.05em">Type</th>';
 html+='<th style="font-size:11px;font-weight:600;color:var(--pt);text-align:left;padding:9px 12px;border-bottom:0.5px solid var(--border);text-transform:uppercase;letter-spacing:.05em">HP Enrolled</th>';
 html+='<th style="font-size:11px;font-weight:600;color:var(--pt);text-align:center;padding:9px 12px;border-bottom:0.5px solid var(--border);text-transform:uppercase;letter-spacing:.05em">Days Enrolled<br><span style="font-weight:400;font-size:10px;text-transform:none;letter-spacing:0">(excl. weekends)</span></th>';
+html+='<th style="font-size:11px;font-weight:600;color:var(--st);text-align:left;padding:9px 12px;border-bottom:0.5px solid var(--border);text-transform:uppercase;letter-spacing:.05em">Rebate Amt</th>';
 html+='<th style="font-size:11px;font-weight:600;color:var(--text2);text-align:left;padding:9px 12px;border-bottom:0.5px solid var(--border);text-transform:uppercase;letter-spacing:.05em">Rebate Status</th>';
 html+='</tr></thead><tbody>';
 list.forEach((p,i)=>{
@@ -3294,6 +3295,7 @@ html+=`<tr style="background:${bg}">
 <td style="padding:9px 12px;border-bottom:0.5px solid var(--border)">${typeBadge(p.type,p.subtype)}</td>
 <td style="padding:9px 12px;font-size:13px;border-bottom:0.5px solid var(--border)"><span style="color:var(--pt);font-weight:500">${fmtDate(p.hpEnrolled)}</span><br><span style="font-size:11px;color:var(--text3)">${monthLabel}</span></td>
 <td style="padding:9px 12px;text-align:center;border-bottom:0.5px solid var(--border)"><span class="days-pill ${pillClass}">${days!==null?days+'d':'--'}</span></td>
+<td style="padding:9px 12px;font-size:13px;font-weight:500;color:var(--st);border-bottom:0.5px solid var(--border)">${fmtMoney(p.rebateAmount)}</td>
 <td style="padding:9px 12px;border-bottom:0.5px solid var(--border)">${statusBadge(p.status)}</td>
 </tr>`;
 });
@@ -3315,12 +3317,12 @@ if(assigneeFilter!=='all')list=list.filter(p=>(p.assignee||'').toLowerCase().inc
 list.sort((a,b)=>a.hpEnrolled.localeCompare(b.hpEnrolled));
 if(!list.length){showToast('No projects to export.');return;}
 const MONTH_NAMES2=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-const headers=['Customer Name','Project ID','Assignee','Type','Subtype','HP Enrolled Date','Enrollment Month','Days Enrolled (No Weekends)','Rebate Status','Address','Notes'];
+const headers=['Customer Name','Project ID','Assignee','Type','Subtype','HP Enrolled Date','Enrollment Month','Days Enrolled (No Weekends)','Rebate Amount','Rebate Status','Address','Notes'];
 const rows=list.map(p=>{
 const k=p.hpEnrolled?p.hpEnrolled.slice(0,7):'';
 const[eyr,emo]=k?k.split('-'):['',''];
 const monthLabel=emo?MONTH_NAMES2[parseInt(emo)-1]+' '+eyr:'';
-return[p.name||'',p.pid||'',p.assignee||'',TL[p.type]||p.type||'',p.subtype||'',p.hpEnrolled||'',monthLabel,daysSince(p.hpEnrolled)??'',p.status||'',p.address||'',p.notes||''];
+return[p.name||'',p.pid||'',p.assignee||'',TL[p.type]||p.type||'',p.subtype||'',p.hpEnrolled||'',monthLabel,daysSince(p.hpEnrolled)??'',p.rebateAmount?parseFloat(p.rebateAmount)||'':'',p.status||'',p.address||'',p.notes||''];
 });
 const xml=buildXLSX([{name:'HP Enrollment',rows:[headers,...rows]}]);
 const suffix=(fromVal&&toVal)?fromVal+'_to_'+toVal:new Date().toISOString().slice(0,10);
