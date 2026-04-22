@@ -336,7 +336,7 @@ tr.dr:hover td{background:var(--bg2);cursor:pointer}
   <button class="filter-btn" onclick="setFilter('joy',this)">Joy</button>
   <button class="filter-btn" onclick="setFilter('althesa',this)">Althesa</button>
   <button class="filter-btn" onclick="setFilter('rachel',this)">Rachel</button>
-  <button class="filter-btn" id="hp45-filter-btn" onclick="setFilter('hp45',this)" style="background:var(--dbg);color:var(--dt);border-color:var(--db)">⏰ HP 45+ Days</button>
+
   <select class="ctrl-select" id="status-filter" onchange="setStatusFilter(this.value)" style="display:none">
     <option value="">All statuses</option>
   </select>
@@ -391,12 +391,13 @@ tr.dr:hover td{background:var(--bg2);cursor:pointer}
     <button class="close-btn" onclick="closeReportCombined()">&#x2715;</button>
   </div>
   <!-- Report type tabs -->
-  <div style="display:flex;gap:0;border-bottom:0.5px solid var(--border);margin-bottom:1rem">
-    <button id="rpt-tab-weekly" onclick="switchReportTab('weekly')" style="font-size:13px;padding:8px 20px;border:none;border-bottom:2px solid var(--text);background:transparent;color:var(--text);cursor:pointer;font-weight:500">By Date Range</button>
-    <button id="rpt-tab-monthly" onclick="switchReportTab('monthly')" style="font-size:13px;padding:8px 20px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--text2);cursor:pointer">Monthly Summary</button>
-    <button id="rpt-tab-corrections" onclick="switchReportTab('corrections')" style="font-size:13px;padding:8px 20px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--text2);cursor:pointer">Corrections</button>
-    <button id="rpt-tab-rebatepay" onclick="switchReportTab('rebatepay')" style="font-size:13px;padding:8px 20px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--st);cursor:pointer;font-weight:500">💰 Rebate Payments</button>
-    <button id="rpt-tab-hp45" onclick="switchReportTab('hp45')" style="font-size:13px;padding:8px 20px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--dt);cursor:pointer;font-weight:500">⏰ HP Follow-Up</button>
+  <div style="display:flex;gap:4px;border-bottom:0.5px solid var(--border);margin-bottom:1rem;overflow-x:auto;padding-bottom:0">
+    <button id="rpt-tab-weekly" onclick="switchReportTab('weekly')" style="font-size:12px;padding:7px 12px;border:none;border-bottom:2px solid var(--text);background:transparent;color:var(--text);cursor:pointer;font-weight:500;white-space:nowrap;flex-shrink:0;margin-bottom:-1px">By Date Range</button>
+    <button id="rpt-tab-monthly" onclick="switchReportTab('monthly')" style="font-size:12px;padding:7px 12px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--text2);cursor:pointer;white-space:nowrap;flex-shrink:0;margin-bottom:-1px">Monthly Summary</button>
+    <button id="rpt-tab-corrections" onclick="switchReportTab('corrections')" style="font-size:12px;padding:7px 12px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--text2);cursor:pointer;white-space:nowrap;flex-shrink:0;margin-bottom:-1px">Corrections</button>
+    <button id="rpt-tab-rebatepay" onclick="switchReportTab('rebatepay')" style="font-size:12px;padding:7px 12px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--st);cursor:pointer;font-weight:500;white-space:nowrap;flex-shrink:0;margin-bottom:-1px">💰 Rebate Payments</button>
+    <button id="rpt-tab-hp45" onclick="switchReportTab('hp45')" style="font-size:12px;padding:7px 12px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--dt);cursor:pointer;font-weight:500;white-space:nowrap;flex-shrink:0;margin-bottom:-1px">⏰ HP Follow-Up</button>
+    <button id="rpt-tab-hpenroll" onclick="switchReportTab('hpenroll')" style="font-size:12px;padding:7px 12px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--pt);cursor:pointer;font-weight:600;white-space:nowrap;flex-shrink:0;margin-bottom:-1px;background:var(--pbg);border-radius:6px 6px 0 0">📅 HP Enrollment</button>
   </div>
 
   <!-- Date Range (Weekly) Panel -->
@@ -506,6 +507,34 @@ tr.dr:hover td{background:var(--bg2);cursor:pointer}
       </div>
     </div>
     <div id="hp45-rpt-content"></div>
+  </div>
+  <!-- HP Enrollment by Month Panel -->
+  <div id="rpt-panel-hpenroll" style="display:none">
+    <div style="background:var(--pbg);border:0.5px solid var(--pb);border-radius:var(--r);padding:10px 14px;margin-bottom:1rem;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
+      <div>
+        <div style="font-size:13px;font-weight:700;color:var(--pt);text-transform:uppercase;letter-spacing:.04em">📅 HP Hourly Pricing — Enrollment by Month</div>
+        <div style="font-size:12px;color:var(--pt);margin-top:2px;opacity:.8">Filter by enrollment date to see when customers switched to hourly pricing, how long they've been enrolled (business days, no weekends), and their current rebate status</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:28px;font-weight:700;color:var(--pt)" id="hpenroll-rpt-count">0</div>
+        <div style="font-size:10px;color:var(--pt);opacity:.7;text-transform:uppercase;letter-spacing:.04em">Projects</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:1rem">
+      <label style="font-size:13px;color:var(--text2)">Enrolled From:</label>
+      <input type="date" id="hpenroll-from" onchange="renderHPEnrollReport()" style="font-size:13px;padding:6px 10px;border-radius:var(--r);border:0.5px solid var(--pb);background:var(--pbg);color:var(--pt);outline:none">
+      <label style="font-size:13px;color:var(--text2)">To:</label>
+      <input type="date" id="hpenroll-to" onchange="renderHPEnrollReport()" style="font-size:13px;padding:6px 10px;border-radius:var(--r);border:0.5px solid var(--pb);background:var(--pbg);color:var(--pt);outline:none">
+      <select id="hpenroll-assignee" onchange="renderHPEnrollReport()" style="font-size:13px;padding:6px 10px;border-radius:var(--r);border:0.5px solid var(--pb);background:var(--pbg);color:var(--pt);outline:none">
+        <option value="all">All Assignees</option>
+        <option value="Joy">Joy</option>
+        <option value="Althesa">Althesa</option>
+        <option value="Rachel">Rachel</option>
+      </select>
+      <button class="export-btn" onclick="exportHPEnrollXLS()" style="border-color:var(--pb);color:var(--pt);margin-left:auto">Export XLS</button>
+    </div>
+    <div id="hpenroll-month-summary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:1rem"></div>
+    <div id="hpenroll-rpt-content"></div>
   </div>
 </div>
 </div>
@@ -1612,7 +1641,7 @@ if(filterType==='corrections')list=list.filter(p=>needsAttention(p));
 if(filterType==='joy')list=list.filter(p=>(p.assignee||'').toLowerCase().includes('joy'));
 if(filterType==='althesa')list=list.filter(p=>(p.assignee||'').toLowerCase().includes('althesa'));
 if(filterType==='rachel')list=list.filter(p=>(p.assignee||'').toLowerCase().includes('rachel'));
-if(filterType==='hp45')list=list.filter(p=>p.hpEnrolled&&daysSince(p.hpEnrolled)>=45);
+if(filterType==='hp45'){const _hp45paid=new Set(['sent for payment','ready for payment','payment processed']);list=list.filter(p=>p.hpEnrolled&&daysSince(p.hpEnrolled)>=45&&!_hp45paid.has((p.status||'').toLowerCase()));}
 if(statusFilters.size>0){const sf=new Set([...statusFilters].map(x=>x.toLowerCase()));list=list.filter(p=>sf.has((p.status||'').toLowerCase()));}
 if(searchQ){const q=searchQ.toLowerCase();list=list.filter(p=>p.name.toLowerCase().includes(q)||(p.pid||'').toLowerCase().includes(q)||(p.assignee||'').toLowerCase().includes(q)||(p.ubName||'').toLowerCase().includes(q));}
 list.sort((a,b)=>{
@@ -1924,7 +1953,8 @@ set('m-att',attAll);
 set('m-pending-all',pendingIC+pendingCOC+pendingRebate);
 set('m-nys',nys);
 set('m-cor',openCorsAll);
-const hp45Count=projects.filter(p=>p.hpEnrolled&&daysSince(p.hpEnrolled)>=45).length;
+const HP45_PAID=new Set(['sent for payment','ready for payment','payment processed']);
+const hp45Count=projects.filter(p=>p.hpEnrolled&&daysSince(p.hpEnrolled)>=45&&!HP45_PAID.has((p.status||'').toLowerCase())).length;
 set('m-hp45',hp45Count);
 const nysIC=projects.filter(p=>p.type==='IC'&&(p.status||'').toLowerCase()==='not yet submitted').length;
 const nysCOC=projects.filter(p=>p.type==='COC'&&(p.status||'').toLowerCase()==='not yet submitted').length;
@@ -1954,6 +1984,11 @@ var rpf=document.getElementById('rebatepay-from');
 var rpt2=document.getElementById('rebatepay-to');
 if(rpf)rpf.value=d30.toISOString().slice(0,10);
 if(rpt2)rpt2.value=now.toISOString().slice(0,10);
+// HP Enrollment: default Dec 1 of previous year to today
+var hpef=document.getElementById('hpenroll-from');
+var hpet=document.getElementById('hpenroll-to');
+if(hpef)hpef.value=(now.getFullYear()-1)+'-12-01';
+if(hpet)hpet.value=now.toISOString().slice(0,10);
 switchReportTab(tab||'weekly');
 renderWeekly();
 renderReport();
@@ -1966,19 +2001,20 @@ function closeWeeklyReport(){closeReportCombined();}
 function openReportModal(){openReportCombined('monthly');}
 function closeReportModal(){closeReportCombined();}
 function switchReportTab(tab){
-['weekly','monthly','corrections','rebatepay','hp45'].forEach(function(t){
+['weekly','monthly','corrections','rebatepay','hp45','hpenroll'].forEach(function(t){
 var panel=document.getElementById('rpt-panel-'+t);
 var btn=document.getElementById('rpt-tab-'+t);
 if(!panel||!btn)return;
 var active=t===tab;
 panel.style.display=active?'block':'none';
 btn.style.borderBottomColor=active?'var(--text)':'transparent';
-btn.style.color=active?(t==='rebatepay'?'var(--st)':t==='hp45'?'var(--dt)':'var(--text)'):'var(--text2)';
+btn.style.color=active?(t==='rebatepay'?'var(--st)':t==='hp45'?'var(--dt)':t==='hpenroll'?'var(--pt)':'var(--text)'):'var(--text2)';
 btn.style.fontWeight=active?'500':'400';
 });
 if(tab==='corrections')renderCorReport();
 if(tab==='rebatepay')renderRebatePayReport();
 if(tab==='hp45')renderHP45Report();
+if(tab==='hpenroll')renderHPEnrollReport();
 }
 function getDateRange(fromId,toId){
 const f=document.getElementById(fromId).value;
@@ -2994,7 +3030,8 @@ showToast('Exported successfully!');
 function renderHP45Report(){
 const threshold=parseInt(document.getElementById('hp45-rpt-threshold')?.value||'45');
 const assigneeFilter=document.getElementById('hp45-rpt-assignee')?.value||'all';
-let list=projects.filter(p=>p.hpEnrolled&&daysSince(p.hpEnrolled)>=threshold);
+const HP45_EXCLUDE=new Set(['sent for payment','ready for payment','payment processed']);
+let list=projects.filter(p=>p.hpEnrolled&&daysSince(p.hpEnrolled)>=threshold&&!HP45_EXCLUDE.has((p.status||'').toLowerCase()));
 if(assigneeFilter!=='all')list=list.filter(p=>(p.assignee||'').toLowerCase().includes(assigneeFilter.toLowerCase()));
 list.sort((a,b)=>{const da=daysSince(a.hpEnrolled),db=daysSince(b.hpEnrolled);return(db||0)-(da||0);});
 const countEl=document.getElementById('hp45-rpt-count');
@@ -3027,7 +3064,8 @@ el.innerHTML=html;
 function exportHP45XLS(){
 const threshold=parseInt(document.getElementById('hp45-rpt-threshold')?.value||'45');
 const assigneeFilter=document.getElementById('hp45-rpt-assignee')?.value||'all';
-let list=projects.filter(p=>p.hpEnrolled&&daysSince(p.hpEnrolled)>=threshold);
+const HP45_EXCLUDE=new Set(['sent for payment','ready for payment','payment processed']);
+let list=projects.filter(p=>p.hpEnrolled&&daysSince(p.hpEnrolled)>=threshold&&!HP45_EXCLUDE.has((p.status||'').toLowerCase()));
 if(assigneeFilter!=='all')list=list.filter(p=>(p.assignee||'').toLowerCase().includes(assigneeFilter.toLowerCase()));
 list.sort((a,b)=>(daysSince(b.hpEnrolled)||0)-(daysSince(a.hpEnrolled)||0));
 if(!list.length){showToast('No projects to export.');return;}
@@ -3035,6 +3073,99 @@ const headers=['Customer Name','Project ID','Assignee','Type','Subtype','HP Enro
 const rows=list.map(p=>[p.name||'',p.pid||'',p.assignee||'',TL[p.type]||p.type||'',p.subtype||'',p.hpEnrolled||'',daysSince(p.hpEnrolled)||'',p.status||'',p.address||'',p.notes||'']);
 const xml=buildXLSX([{name:'HP Follow-Up',rows:[headers,...rows]}]);
 downloadXLS(xml,'hp_followup_45days_'+new Date().toISOString().slice(0,10)+'.xls');
+showToast('Exported successfully!');
+}
+function renderHPEnrollReport(){
+const fromVal=document.getElementById('hpenroll-from').value;
+const toVal=document.getElementById('hpenroll-to').value;
+const assigneeFilter=document.getElementById('hpenroll-assignee').value||'all';
+const el=document.getElementById('hpenroll-rpt-content');
+const summaryEl=document.getElementById('hpenroll-month-summary');
+const countEl=document.getElementById('hpenroll-rpt-count');
+if(!el)return;
+// Build date range — if both blank show all HP enrolled
+let rangeFrom=null,rangeTo=null;
+if(fromVal){rangeFrom=new Date(fromVal);rangeFrom.setHours(0,0,0,0);}
+if(toVal){rangeTo=new Date(toVal);rangeTo.setHours(23,59,59,999);}
+let list=projects.filter(p=>p.hpEnrolled);
+if(rangeFrom)list=list.filter(p=>{const d=new Date(p.hpEnrolled);d.setHours(12,0,0,0);return d>=rangeFrom;});
+if(rangeTo)list=list.filter(p=>{const d=new Date(p.hpEnrolled);d.setHours(12,0,0,0);return d<=rangeTo;});
+if(assigneeFilter!=='all')list=list.filter(p=>(p.assignee||'').toLowerCase().includes(assigneeFilter.toLowerCase()));
+list.sort((a,b)=>a.hpEnrolled.localeCompare(b.hpEnrolled));
+if(countEl)countEl.textContent=list.length;
+// Monthly summary cards
+const monthBuckets={};
+list.forEach(p=>{
+const k=p.hpEnrolled.slice(0,7);
+if(!monthBuckets[k])monthBuckets[k]=[];
+monthBuckets[k].push(p);
+});
+const MONTH_NAMES=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+let sumHtml='';
+Object.keys(monthBuckets).sort().forEach(k=>{
+const[yr,mo]=k.split('-');
+const label=MONTH_NAMES[parseInt(mo)-1]+' '+yr;
+const cnt=monthBuckets[k].length;
+const avgDays=Math.round(monthBuckets[k].reduce((s,p)=>s+(daysSince(p.hpEnrolled)||0),0)/cnt);
+sumHtml+=`<div style="background:var(--pbg);border:0.5px solid var(--pb);border-radius:var(--r);padding:10px 14px"><div style="font-size:11px;color:var(--pt);font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">${label}</div><div style="font-size:22px;font-weight:700;color:var(--pt)">${cnt}</div><div style="font-size:10px;color:var(--pt);opacity:.7">project${cnt!==1?'s':''} &nbsp;·&nbsp; avg ${avgDays}d enrolled</div></div>`;
+});
+if(summaryEl)summaryEl.innerHTML=sumHtml;
+if(!list.length){el.innerHTML='<p style="color:var(--text2);font-size:13px;padding:1.5rem 0;text-align:center">No projects match this filter. Try adjusting the date range.</p>';return;}
+let html='<div style="background:var(--bg);border:0.5px solid var(--border);border-radius:var(--r);overflow:hidden">';
+html+='<table style="width:100%;border-collapse:collapse">';
+html+='<thead><tr style="background:var(--bg2)">';
+html+='<th style="font-size:11px;font-weight:600;color:var(--text2);text-align:left;padding:9px 12px;border-bottom:0.5px solid var(--border);text-transform:uppercase;letter-spacing:.05em">Customer</th>';
+html+='<th style="font-size:11px;font-weight:600;color:var(--text2);text-align:left;padding:9px 12px;border-bottom:0.5px solid var(--border);text-transform:uppercase;letter-spacing:.05em">Project ID</th>';
+html+='<th style="font-size:11px;font-weight:600;color:var(--text2);text-align:left;padding:9px 12px;border-bottom:0.5px solid var(--border);text-transform:uppercase;letter-spacing:.05em">Assignee</th>';
+html+='<th style="font-size:11px;font-weight:600;color:var(--text2);text-align:left;padding:9px 12px;border-bottom:0.5px solid var(--border);text-transform:uppercase;letter-spacing:.05em">Type</th>';
+html+='<th style="font-size:11px;font-weight:600;color:var(--pt);text-align:left;padding:9px 12px;border-bottom:0.5px solid var(--border);text-transform:uppercase;letter-spacing:.05em">HP Enrolled</th>';
+html+='<th style="font-size:11px;font-weight:600;color:var(--pt);text-align:center;padding:9px 12px;border-bottom:0.5px solid var(--border);text-transform:uppercase;letter-spacing:.05em">Days Enrolled<br><span style="font-weight:400;font-size:10px;text-transform:none;letter-spacing:0">(excl. weekends)</span></th>';
+html+='<th style="font-size:11px;font-weight:600;color:var(--text2);text-align:left;padding:9px 12px;border-bottom:0.5px solid var(--border);text-transform:uppercase;letter-spacing:.05em">Rebate Status</th>';
+html+='</tr></thead><tbody>';
+list.forEach((p,i)=>{
+const days=daysSince(p.hpEnrolled);
+const pillClass=days>90?'long':days>60?'med':'';
+const bg=i%2===0?'var(--bg)':'var(--bg2)';
+const enrollMonth=p.hpEnrolled?p.hpEnrolled.slice(0,7):'';
+const[eyr,emo]=enrollMonth?enrollMonth.split('-'):['',''];
+const monthLabel=emo?MONTH_NAMES[parseInt(emo)-1]+' '+eyr:'--';
+html+=`<tr style="background:${bg}">
+<td style="padding:9px 12px;font-size:13px;font-weight:500;border-bottom:0.5px solid var(--border)">${p.name||'--'}</td>
+<td style="padding:9px 12px;font-size:12px;color:var(--text2);border-bottom:0.5px solid var(--border)">${p.pid||'--'}</td>
+<td style="padding:9px 12px;font-size:13px;border-bottom:0.5px solid var(--border)">${p.assignee||'--'}</td>
+<td style="padding:9px 12px;border-bottom:0.5px solid var(--border)">${typeBadge(p.type,p.subtype)}</td>
+<td style="padding:9px 12px;font-size:13px;border-bottom:0.5px solid var(--border)"><span style="color:var(--pt);font-weight:500">${fmtDate(p.hpEnrolled)}</span><br><span style="font-size:11px;color:var(--text3)">${monthLabel}</span></td>
+<td style="padding:9px 12px;text-align:center;border-bottom:0.5px solid var(--border)"><span class="days-pill ${pillClass}">${days!==null?days+'d':'--'}</span></td>
+<td style="padding:9px 12px;border-bottom:0.5px solid var(--border)">${statusBadge(p.status)}</td>
+</tr>`;
+});
+html+='</tbody></table></div>';
+el.innerHTML=html;
+}
+function exportHPEnrollXLS(){
+const fromVal=document.getElementById('hpenroll-from').value;
+const toVal=document.getElementById('hpenroll-to').value;
+const assigneeFilter=document.getElementById('hpenroll-assignee').value||'all';
+let rangeFrom=null,rangeTo=null;
+if(fromVal){rangeFrom=new Date(fromVal);rangeFrom.setHours(0,0,0,0);}
+if(toVal){rangeTo=new Date(toVal);rangeTo.setHours(23,59,59,999);}
+let list=projects.filter(p=>p.hpEnrolled);
+if(rangeFrom)list=list.filter(p=>{const d=new Date(p.hpEnrolled);d.setHours(12,0,0,0);return d>=rangeFrom;});
+if(rangeTo)list=list.filter(p=>{const d=new Date(p.hpEnrolled);d.setHours(12,0,0,0);return d<=rangeTo;});
+if(assigneeFilter!=='all')list=list.filter(p=>(p.assignee||'').toLowerCase().includes(assigneeFilter.toLowerCase()));
+list.sort((a,b)=>a.hpEnrolled.localeCompare(b.hpEnrolled));
+if(!list.length){showToast('No projects to export.');return;}
+const MONTH_NAMES2=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const headers=['Customer Name','Project ID','Assignee','Type','Subtype','HP Enrolled Date','Enrollment Month','Days Enrolled (No Weekends)','Rebate Status','Address','Notes'];
+const rows=list.map(p=>{
+const k=p.hpEnrolled?p.hpEnrolled.slice(0,7):'';
+const[eyr,emo]=k?k.split('-'):['',''];
+const monthLabel=emo?MONTH_NAMES2[parseInt(emo)-1]+' '+eyr:'';
+return[p.name||'',p.pid||'',p.assignee||'',TL[p.type]||p.type||'',p.subtype||'',p.hpEnrolled||'',monthLabel,daysSince(p.hpEnrolled)??'',p.status||'',p.address||'',p.notes||''];
+});
+const xml=buildXLSX([{name:'HP Enrollment',rows:[headers,...rows]}]);
+const suffix=(fromVal&&toVal)?fromVal+'_to_'+toVal:new Date().toISOString().slice(0,10);
+downloadXLS(xml,'hp_enrollment_'+suffix+'.xls');
 showToast('Exported successfully!');
 }
 load();updateStatusDropdown();render();applyEditMode();
