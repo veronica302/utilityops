@@ -391,13 +391,13 @@ tr.dr:hover td{background:var(--bg2);cursor:pointer}
     <button class="close-btn" onclick="closeReportCombined()">&#x2715;</button>
   </div>
   <!-- Report type tabs -->
-  <div style="display:flex;gap:0;border-bottom:0.5px solid var(--border);margin-bottom:1rem">
-    <button id="rpt-tab-weekly" onclick="switchReportTab('weekly')" style="font-size:13px;padding:8px 20px;border:none;border-bottom:2px solid var(--text);background:transparent;color:var(--text);cursor:pointer;font-weight:500">By Date Range</button>
-    <button id="rpt-tab-monthly" onclick="switchReportTab('monthly')" style="font-size:13px;padding:8px 20px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--text2);cursor:pointer">Monthly Summary</button>
-    <button id="rpt-tab-corrections" onclick="switchReportTab('corrections')" style="font-size:13px;padding:8px 20px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--text2);cursor:pointer">Corrections</button>
-    <button id="rpt-tab-rebatepay" onclick="switchReportTab('rebatepay')" style="font-size:13px;padding:8px 20px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--st);cursor:pointer;font-weight:500">💰 Rebate Payments</button>
-    <button id="rpt-tab-hp45" onclick="switchReportTab('hp45')" style="font-size:13px;padding:8px 20px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--dt);cursor:pointer;font-weight:500">⏰ HP Follow-Up</button>
-    <button id="rpt-tab-hpenroll" onclick="switchReportTab('hpenroll')" style="font-size:13px;padding:8px 20px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--pt);cursor:pointer;font-weight:500">📅 HP Enrollment</button>
+  <div style="display:flex;gap:0;border-bottom:0.5px solid var(--border);margin-bottom:1rem;overflow-x:auto;flex-wrap:nowrap">
+    <button id="rpt-tab-weekly" onclick="switchReportTab('weekly')" style="font-size:13px;padding:8px 14px;border:none;border-bottom:2px solid var(--text);background:transparent;color:var(--text);cursor:pointer;font-weight:500;white-space:nowrap;flex-shrink:0">By Date Range</button>
+    <button id="rpt-tab-monthly" onclick="switchReportTab('monthly')" style="font-size:13px;padding:8px 14px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--text2);cursor:pointer;white-space:nowrap;flex-shrink:0">Monthly Summary</button>
+    <button id="rpt-tab-corrections" onclick="switchReportTab('corrections')" style="font-size:13px;padding:8px 14px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--text2);cursor:pointer;white-space:nowrap;flex-shrink:0">Corrections</button>
+    <button id="rpt-tab-rebatepay" onclick="switchReportTab('rebatepay')" style="font-size:13px;padding:8px 14px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--st);cursor:pointer;font-weight:500;white-space:nowrap;flex-shrink:0">💰 Rebate Payments</button>
+    <button id="rpt-tab-hp45" onclick="switchReportTab('hp45')" style="font-size:13px;padding:8px 14px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--dt);cursor:pointer;font-weight:500;white-space:nowrap;flex-shrink:0">⏰ HP Follow-Up</button>
+    <button id="rpt-tab-hpenroll" onclick="switchReportTab('hpenroll')" style="font-size:13px;padding:8px 14px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--pt);cursor:pointer;font-weight:500;white-space:nowrap;flex-shrink:0">📅 HP Enrollment</button>
   </div>
 
   <!-- Date Range (Weekly) Panel -->
