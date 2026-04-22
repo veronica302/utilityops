@@ -3087,7 +3087,8 @@ if(!el)return;
 let rangeFrom=null,rangeTo=null;
 if(fromVal){rangeFrom=new Date(fromVal);rangeFrom.setHours(0,0,0,0);}
 if(toVal){rangeTo=new Date(toVal);rangeTo.setHours(23,59,59,999);}
-let list=projects.filter(p=>p.hpEnrolled);
+const HPENROLL_EXCLUDE=new Set(['sent for payment','ready for payment','payment processed']);
+let list=projects.filter(p=>p.hpEnrolled&&!HPENROLL_EXCLUDE.has((p.status||'').toLowerCase()));
 if(rangeFrom)list=list.filter(p=>{const d=new Date(p.hpEnrolled);d.setHours(12,0,0,0);return d>=rangeFrom;});
 if(rangeTo)list=list.filter(p=>{const d=new Date(p.hpEnrolled);d.setHours(12,0,0,0);return d<=rangeTo;});
 if(assigneeFilter!=='all')list=list.filter(p=>(p.assignee||'').toLowerCase().includes(assigneeFilter.toLowerCase()));
@@ -3149,7 +3150,8 @@ const assigneeFilter=document.getElementById('hpenroll-assignee').value||'all';
 let rangeFrom=null,rangeTo=null;
 if(fromVal){rangeFrom=new Date(fromVal);rangeFrom.setHours(0,0,0,0);}
 if(toVal){rangeTo=new Date(toVal);rangeTo.setHours(23,59,59,999);}
-let list=projects.filter(p=>p.hpEnrolled);
+const HPENROLL_XLS_EXCLUDE=new Set(['sent for payment','ready for payment','payment processed']);
+let list=projects.filter(p=>p.hpEnrolled&&!HPENROLL_XLS_EXCLUDE.has((p.status||'').toLowerCase()));
 if(rangeFrom)list=list.filter(p=>{const d=new Date(p.hpEnrolled);d.setHours(12,0,0,0);return d>=rangeFrom;});
 if(rangeTo)list=list.filter(p=>{const d=new Date(p.hpEnrolled);d.setHours(12,0,0,0);return d<=rangeTo;});
 if(assigneeFilter!=='all')list=list.filter(p=>(p.assignee||'').toLowerCase().includes(assigneeFilter.toLowerCase()));
