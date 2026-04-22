@@ -399,6 +399,7 @@ tr.dr:hover td{background:var(--bg2);cursor:pointer}
     <button id="rpt-tab-rebatepay" onclick="switchReportTab('rebatepay')" style="font-size:12px;padding:7px 12px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--st);cursor:pointer;font-weight:500;white-space:nowrap;flex-shrink:0;margin-bottom:-1px">💰 Rebate Payments</button>
     <button id="rpt-tab-hp45" onclick="switchReportTab('hp45')" style="font-size:12px;padding:7px 12px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--dt);cursor:pointer;font-weight:500;white-space:nowrap;flex-shrink:0;margin-bottom:-1px">⏰ HP Follow-Up</button>
     <button id="rpt-tab-hpenroll" onclick="switchReportTab('hpenroll')" style="font-size:12px;padding:7px 12px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--pt);cursor:pointer;font-weight:600;white-space:nowrap;flex-shrink:0;margin-bottom:-1px;background:var(--pbg);border-radius:6px 6px 0 0">📅 HP Enrollment</button>
+    <button id="rpt-tab-hpmissing" onclick="switchReportTab('hpmissing')" style="font-size:12px;padding:7px 12px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--wt);cursor:pointer;font-weight:600;white-space:nowrap;flex-shrink:0;margin-bottom:-1px;background:var(--wbg);border-radius:6px 6px 0 0">⚠️ Missing HP Date</button>
   </div>
 
   <!-- Date Range (Weekly) Panel -->
@@ -508,30 +509,6 @@ tr.dr:hover td{background:var(--bg2);cursor:pointer}
       </div>
     </div>
     <div id="hp45-rpt-content"></div>
-
-    <!-- Missing HP Enrollment Date Section -->
-    <div style="margin-top:1.5rem;border-top:0.5px solid var(--border);padding-top:1.25rem">
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:1rem">
-        <div>
-          <div style="font-size:13px;font-weight:700;color:var(--wt);text-transform:uppercase;letter-spacing:.04em">⚠️ Missing HP Enrollment Date</div>
-          <div style="font-size:12px;color:var(--wt);margin-top:2px;opacity:.9">Rebate projects with no HP enrollment date recorded — needs to be updated in the tracker</div>
-        </div>
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-          <div style="text-align:center;background:var(--wbg);border:0.5px solid var(--wb);border-radius:var(--r);padding:8px 16px">
-            <div style="font-size:28px;font-weight:700;color:var(--wt)" id="hp-missing-count">0</div>
-            <div style="font-size:10px;color:var(--wt);opacity:.7;text-transform:uppercase;letter-spacing:.04em">Missing</div>
-          </div>
-          <select id="hp-missing-assignee" onchange="renderHPMissingReport()" style="font-size:13px;padding:6px 10px;border-radius:var(--r);border:0.5px solid var(--wb);background:var(--wbg);color:var(--wt);outline:none">
-            <option value="all">All Assignees</option>
-            <option value="Joy">Joy</option>
-            <option value="Althesa">Althesa</option>
-            <option value="Rachel">Rachel</option>
-          </select>
-          <button class="export-btn" onclick="exportHPMissingXLS()" style="border-color:var(--wb);color:var(--wt)">Export XLS</button>
-        </div>
-      </div>
-      <div id="hp-missing-content"></div>
-    </div>
   </div>
   <!-- HP Enrollment by Month Panel -->
   <div id="rpt-panel-hpenroll" style="display:none">
@@ -560,6 +537,29 @@ tr.dr:hover td{background:var(--bg2);cursor:pointer}
     </div>
     <div id="hpenroll-month-summary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:1rem"></div>
     <div id="hpenroll-rpt-content"></div>
+  </div>
+  <!-- Missing HP Date Panel -->
+  <div id="rpt-panel-hpmissing" style="display:none">
+    <div style="background:var(--wbg);border:0.5px solid var(--wb);border-radius:var(--r);padding:10px 14px;margin-bottom:1rem;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
+      <div>
+        <div style="font-size:13px;font-weight:700;color:var(--wt);text-transform:uppercase;letter-spacing:.04em">⚠️ Missing HP Enrollment Date</div>
+        <div style="font-size:12px;color:var(--wt);margin-top:2px;opacity:.9">Customers with no HP enrollment date recorded — grouped by customer, excludes Sent/Ready/Payment Processed</div>
+      </div>
+      <div style="text-align:center;background:var(--wbg);border:0.5px solid var(--wb);border-radius:var(--r);padding:8px 16px">
+        <div style="font-size:28px;font-weight:700;color:var(--wt)" id="hp-missing-count">0</div>
+        <div style="font-size:10px;color:var(--wt);opacity:.7;text-transform:uppercase;letter-spacing:.04em">Customers</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:1rem">
+      <select id="hp-missing-assignee" onchange="renderHPMissingReport()" style="font-size:13px;padding:6px 10px;border-radius:var(--r);border:0.5px solid var(--wb);background:var(--wbg);color:var(--wt);outline:none">
+        <option value="all">All Assignees</option>
+        <option value="Joy">Joy</option>
+        <option value="Althesa">Althesa</option>
+        <option value="Rachel">Rachel</option>
+      </select>
+      <button class="export-btn" onclick="exportHPMissingXLS()" style="border-color:var(--wb);color:var(--wt)">Export XLS</button>
+    </div>
+    <div id="hp-missing-content"></div>
   </div>
 </div>
 </div>
@@ -2153,20 +2153,21 @@ function closeWeeklyReport(){closeReportCombined();}
 function openReportModal(){openReportCombined('monthly');}
 function closeReportModal(){closeReportCombined();}
 function switchReportTab(tab){
-['weekly','monthly','corrections','rebatepay','hp45','hpenroll'].forEach(function(t){
+['weekly','monthly','corrections','rebatepay','hp45','hpenroll','hpmissing'].forEach(function(t){
 var panel=document.getElementById('rpt-panel-'+t);
 var btn=document.getElementById('rpt-tab-'+t);
 if(!panel||!btn)return;
 var active=t===tab;
 panel.style.display=active?'block':'none';
 btn.style.borderBottomColor=active?'var(--text)':'transparent';
-btn.style.color=active?(t==='rebatepay'?'var(--st)':t==='hp45'?'var(--dt)':t==='hpenroll'?'var(--pt)':'var(--text)'):'var(--text2)';
+btn.style.color=active?(t==='rebatepay'?'var(--st)':t==='hp45'?'var(--dt)':t==='hpenroll'?'var(--pt)':t==='hpmissing'?'var(--wt)':'var(--text)'):'var(--text2)';
 btn.style.fontWeight=active?'500':'400';
 });
 if(tab==='corrections')renderCorReport();
 if(tab==='rebatepay')renderRebatePayReport();
 if(tab==='hp45'){renderHP45Report();renderHPMissingReport();}
 if(tab==='hpenroll')renderHPEnrollReport();
+if(tab==='hpmissing')renderHPMissingReport();
 }
 function getDateRange(fromId,toId){
 const f=document.getElementById(fromId).value;
