@@ -508,6 +508,30 @@ tr.dr:hover td{background:var(--bg2);cursor:pointer}
       </div>
     </div>
     <div id="hp45-rpt-content"></div>
+
+    <!-- Missing HP Enrollment Date Section -->
+    <div style="margin-top:1.5rem;border-top:0.5px solid var(--border);padding-top:1.25rem">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:1rem">
+        <div>
+          <div style="font-size:13px;font-weight:700;color:var(--wt);text-transform:uppercase;letter-spacing:.04em">⚠️ Missing HP Enrollment Date</div>
+          <div style="font-size:12px;color:var(--wt);margin-top:2px;opacity:.9">Rebate projects with no HP enrollment date recorded — needs to be updated in the tracker</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <div style="text-align:center;background:var(--wbg);border:0.5px solid var(--wb);border-radius:var(--r);padding:8px 16px">
+            <div style="font-size:28px;font-weight:700;color:var(--wt)" id="hp-missing-count">0</div>
+            <div style="font-size:10px;color:var(--wt);opacity:.7;text-transform:uppercase;letter-spacing:.04em">Missing</div>
+          </div>
+          <select id="hp-missing-assignee" onchange="renderHPMissingReport()" style="font-size:13px;padding:6px 10px;border-radius:var(--r);border:0.5px solid var(--wb);background:var(--wbg);color:var(--wt);outline:none">
+            <option value="all">All Assignees</option>
+            <option value="Joy">Joy</option>
+            <option value="Althesa">Althesa</option>
+            <option value="Rachel">Rachel</option>
+          </select>
+          <button class="export-btn" onclick="exportHPMissingXLS()" style="border-color:var(--wb);color:var(--wt)">Export XLS</button>
+        </div>
+      </div>
+      <div id="hp-missing-content"></div>
+    </div>
   </div>
   <!-- HP Enrollment by Month Panel -->
   <div id="rpt-panel-hpenroll" style="display:none">
@@ -2120,7 +2144,7 @@ if(hpet)hpet.value=now.toISOString().slice(0,10);
 switchReportTab(tab||'weekly');
 renderWeekly();
 renderReport();
-if(tab==='hp45')renderHP45Report();
+if(tab==='hp45'){renderHP45Report();renderHPMissingReport();}
 document.getElementById('report-combined-modal').style.display='flex';
 }
 function closeReportCombined(){document.getElementById('report-combined-modal').style.display='none';}
@@ -2141,7 +2165,7 @@ btn.style.fontWeight=active?'500':'400';
 });
 if(tab==='corrections')renderCorReport();
 if(tab==='rebatepay')renderRebatePayReport();
-if(tab==='hp45')renderHP45Report();
+if(tab==='hp45'){renderHP45Report();renderHPMissingReport();}
 if(tab==='hpenroll')renderHPEnrollReport();
 }
 function getDateRange(fromId,toId){
@@ -3300,6 +3324,82 @@ return[p.name||'',p.pid||'',p.assignee||'',TL[p.type]||p.type||'',p.subtype||'',
 const xml=buildXLSX([{name:'HP Enrollment',rows:[headers,...rows]}]);
 const suffix=(fromVal&&toVal)?fromVal+'_to_'+toVal:new Date().toISOString().slice(0,10);
 downloadXLS(xml,'hp_enrollment_'+suffix+'.xls');
+showToast('Exported successfully!');
+}
+function getHPMissingList(assigneeFilter){
+const PAID=new Set(['sent for payment','ready for payment','payment processed']);
+// Get all projects missing HP enrollment date except those already paid
+let raw=projects.filter(p=>!p.hpEnrolled&&!PAID.has((p.status||'').toLowerCase()));
+// Check: if a customer has ANY project with hpEnrolled, exclude them entirely
+const enrolledNames=new Set(
+  projects.filter(p=>p.hpEnrolled).map(p=>(p.name||'').trim().toLowerCase())
+);
+raw=raw.filter(p=>!enrolledNames.has((p.name||'').trim().toLowerCase()));
+// Deduplicate by customer name — keep the most relevant project per customer
+// Priority: Rebate > COC > IC (most advanced stage)
+const typePriority={Rebate:0,COC:1,IC:2};
+const byName={};
+raw.forEach(p=>{
+  const key=(p.name||'').trim().toLowerCase();
+  if(!byName[key]){byName[key]=p;return;}
+  const existing=byName[key];
+  const ep=typePriority[existing.type]??9;
+  const np=typePriority[p.type]??9;
+  if(np<ep)byName[key]=p;
+});
+let list=Object.values(byName);
+if(assigneeFilter&&assigneeFilter!=='all')list=list.filter(p=>(p.assignee||'').toLowerCase().includes(assigneeFilter.toLowerCase()));
+list.sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+return list;
+}
+function renderHPMissingReport(){
+const assigneeFilter=document.getElementById('hp-missing-assignee')?.value||'all';
+const list=getHPMissingList(assigneeFilter);
+const countEl=document.getElementById('hp-missing-count');
+if(countEl)countEl.textContent=list.length;
+const el=document.getElementById('hp-missing-content');
+if(!el)return;
+if(!list.length){el.innerHTML='<p style="color:var(--text2);font-size:13px;padding:1.5rem 0;text-align:center">🎉 All active customers have an HP enrollment date!</p>';return;}
+const ASSIGNEE_KEYS=['Joy','Althesa','Rachel'];
+function normalizeA(a){const s=(a||'').trim();const m=ASSIGNEE_KEYS.find(k=>s.toLowerCase().includes(k.toLowerCase()));return m||s||'Unassigned';}
+const byAssignee={};
+list.forEach(p=>{const a=normalizeA(p.assignee);if(!byAssignee[a])byAssignee[a]=[];byAssignee[a].push(p);});
+let html='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:1.25rem">';
+Object.entries(byAssignee).forEach(([a,items])=>{
+html+=`<div style="background:var(--wbg);border:0.5px solid var(--wb);border-radius:var(--r);padding:10px 14px"><div style="font-size:11px;color:var(--wt);font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">${a}</div><div style="font-size:22px;font-weight:700;color:var(--wt)">${items.length}</div><div style="font-size:10px;color:var(--wt);opacity:.7">customer${items.length!==1?'s':''} missing date</div></div>`;
+});
+html+='</div>';
+html+='<div style="font-size:11px;color:var(--text3);margin-bottom:10px;padding-left:2px">Grouped by customer — if a customer has multiple project types, only shown once. If any project for that customer already has an HP date, they are excluded.</div>';
+html+='<div style="background:var(--bg);border:0.5px solid var(--border);border-radius:var(--r);overflow:hidden">';
+html+='<table style="width:100%;border-collapse:collapse">';
+html+='<thead><tr style="background:var(--bg2)">';
+html+='<th style="font-size:11px;font-weight:600;color:var(--text2);text-align:left;padding:9px 12px;border-bottom:0.5px solid var(--border);text-transform:uppercase;letter-spacing:.05em">Customer</th>';
+html+='<th style="font-size:11px;font-weight:600;color:var(--text2);text-align:left;padding:9px 12px;border-bottom:0.5px solid var(--border);text-transform:uppercase;letter-spacing:.05em">Project ID</th>';
+html+='<th style="font-size:11px;font-weight:600;color:var(--text2);text-align:left;padding:9px 12px;border-bottom:0.5px solid var(--border);text-transform:uppercase;letter-spacing:.05em">Type</th>';
+html+='<th style="font-size:11px;font-weight:600;color:var(--text2);text-align:left;padding:9px 12px;border-bottom:0.5px solid var(--border);text-transform:uppercase;letter-spacing:.05em">Assignee</th>';
+html+='<th style="font-size:11px;font-weight:600;color:var(--wt);text-align:left;padding:9px 12px;border-bottom:0.5px solid var(--border);text-transform:uppercase;letter-spacing:.05em">Current Status</th>';
+html+='</tr></thead><tbody>';
+list.forEach((p,i)=>{
+const bg=i%2===0?'var(--bg)':'var(--bg2)';
+html+=`<tr style="background:${bg}">
+<td style="padding:9px 12px;font-size:13px;font-weight:500;border-bottom:0.5px solid var(--border)">${p.name||'--'}</td>
+<td style="padding:9px 12px;font-size:12px;color:var(--text2);border-bottom:0.5px solid var(--border)">${p.pid||'--'}</td>
+<td style="padding:9px 12px;border-bottom:0.5px solid var(--border)">${typeBadge(p.type,p.subtype)}</td>
+<td style="padding:9px 12px;font-size:13px;border-bottom:0.5px solid var(--border)">${p.assignee||'--'}</td>
+<td style="padding:9px 12px;border-bottom:0.5px solid var(--border)">${statusBadge(p.status)}</td>
+</tr>`;
+});
+html+='</tbody></table></div>';
+el.innerHTML=html;
+}
+function exportHPMissingXLS(){
+const assigneeFilter=document.getElementById('hp-missing-assignee')?.value||'all';
+const list=getHPMissingList(assigneeFilter);
+if(!list.length){showToast('No projects to export.');return;}
+const headers=['Customer Name','Project ID','Type','Subtype','Assignee','Current Status'];
+const rows=list.map(p=>[p.name||'',p.pid||'',TL[p.type]||p.type||'',p.subtype||'',p.assignee||'',p.status||'']);
+const xml=buildXLSX([{name:'Missing HP Enrollment',rows:[headers,...rows]}]);
+downloadXLS(xml,'missing_hp_enrollment_'+new Date().toISOString().slice(0,10)+'.xls');
 showToast('Exported successfully!');
 }
 load();updateStatusDropdown();render();applyEditMode();
