@@ -898,10 +898,16 @@ async function loadFromSupabase() {
     try {
       const pRows = await sbFetch('/rest/v1/projects?select=id,data&order=id.asc&limit=5000');
       if (pRows && pRows.length > 0) {
-        // Merge: remote is source of truth, but keep any local-only unsaved projects
+        // Supabase is source of truth. Only keep local-only projects that were
+        // saved very recently (within 5 min) — meaning they may not have reached Supabase yet.
         const remoteIds = new Set(pRows.map(r => String(r.data.id)));
-        const localOnly = projects.filter(p => !remoteIds.has(String(p.id)));
-        projects = pRows.map(r => r.data).concat(localOnly);
+        const fiveMinAgo = Date.now() - 300000;
+        const recentLocalOnly = projects.filter(p =>
+          !remoteIds.has(String(p.id)) &&
+          p.lastEditedAt &&
+          new Date(p.lastEditedAt).getTime() > fiveMinAgo
+        );
+        projects = pRows.map(r => r.data).concat(recentLocalOnly);
       } else if (pRows && pRows.length === 0) {
         // Truly empty DB — only seed if local is also empty
         if (!local || !local.projects || local.projects.length === 0) {
@@ -916,9 +922,8 @@ async function loadFromSupabase() {
 
       const cRows = await sbFetch('/rest/v1/corrections?select=id,data&order=id.asc&limit=5000');
       if (cRows) {
-        const remoteCorIds = new Set(cRows.map(r => String(r.data.id)));
-        const localOnlyCors = corrections.filter(c => !remoteCorIds.has(String(c.id)));
-        corrections = cRows.map(r => r.data).concat(localOnlyCors);
+        // Supabase is source of truth for corrections too
+        corrections = cRows.map(r => r.data);
       }
 
       const sRows = await sbFetch('/rest/v1/settings?select=key,value');
@@ -1135,14 +1140,18 @@ function startPolling() {
       if (document.hidden) return; // Don't poll when tab is in background
       const pRows = await sbFetch('/rest/v1/projects?select=id,data&order=id.asc&limit=5000');
       if (pRows && pRows.length > 0) {
+        // Supabase is source of truth. Only keep very recent local-only projects (last 5 min)
         const remoteIds = new Set(pRows.map(r => String(r.data.id)));
-        const localOnly = projects.filter(p => !remoteIds.has(String(p.id)));
-        projects = pRows.map(r => r.data).concat(localOnly);
+        const fiveMinAgo = Date.now() - 300000;
+        const recentLocalOnly = projects.filter(p =>
+          !remoteIds.has(String(p.id)) &&
+          p.lastEditedAt &&
+          new Date(p.lastEditedAt).getTime() > fiveMinAgo
+        );
+        projects = pRows.map(r => r.data).concat(recentLocalOnly);
         const cRows = await sbFetch('/rest/v1/corrections?select=id,data&order=id.asc&limit=5000');
         if (cRows) {
-          const remoteCorIds = new Set(cRows.map(r => String(r.data.id)));
-          const localOnlyCors = corrections.filter(c => !remoteCorIds.has(String(c.id)));
-          corrections = cRows.map(r => r.data).concat(localOnlyCors);
+          corrections = cRows.map(r => r.data);
         }
         saveLocal();
         render();
