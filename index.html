@@ -2604,6 +2604,24 @@ showDeleteConfirm(p?p.name:'this project',()=>{
 projects=projects.filter(x=>x.id!==id);
 corrections=corrections.filter(c=>!c.linkedProjectId||parseInt(c.linkedProjectId)!==id);
 save();render();closeDetail();
+setSaveStatus('saving');
+deleteProjectFromSupabase(id).then(()=>{
+  setSaveStatus('saved');
+  showToast('Project deleted.');
+}).catch((e)=>{
+  console.error('Delete failed, retrying:', e);
+  setSaveStatus('retrying','1/3');
+  setTimeout(()=>{
+    deleteProjectFromSupabase(id).then(()=>{
+      setSaveStatus('saved');
+      showToast('Project deleted.');
+    }).catch((e2)=>{
+      console.error('Delete retry failed:', e2);
+      setSaveStatus('error');
+      showToast('⚠️ Delete may not have saved to cloud. Do not refresh yet.');
+    });
+  }, 3000);
+});
 });
 }
 function deleteCor(id){
