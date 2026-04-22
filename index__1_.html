@@ -391,13 +391,13 @@ tr.dr:hover td{background:var(--bg2);cursor:pointer}
     <button class="close-btn" onclick="closeReportCombined()">&#x2715;</button>
   </div>
   <!-- Report type tabs -->
-  <div style="display:flex;gap:0;border-bottom:0.5px solid var(--border);margin-bottom:1rem;overflow-x:auto;flex-wrap:nowrap">
-    <button id="rpt-tab-weekly" onclick="switchReportTab('weekly')" style="font-size:13px;padding:8px 14px;border:none;border-bottom:2px solid var(--text);background:transparent;color:var(--text);cursor:pointer;font-weight:500;white-space:nowrap;flex-shrink:0">By Date Range</button>
-    <button id="rpt-tab-monthly" onclick="switchReportTab('monthly')" style="font-size:13px;padding:8px 14px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--text2);cursor:pointer;white-space:nowrap;flex-shrink:0">Monthly Summary</button>
-    <button id="rpt-tab-corrections" onclick="switchReportTab('corrections')" style="font-size:13px;padding:8px 14px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--text2);cursor:pointer;white-space:nowrap;flex-shrink:0">Corrections</button>
-    <button id="rpt-tab-rebatepay" onclick="switchReportTab('rebatepay')" style="font-size:13px;padding:8px 14px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--st);cursor:pointer;font-weight:500;white-space:nowrap;flex-shrink:0">💰 Rebate Payments</button>
-    <button id="rpt-tab-hp45" onclick="switchReportTab('hp45')" style="font-size:13px;padding:8px 14px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--dt);cursor:pointer;font-weight:500;white-space:nowrap;flex-shrink:0">⏰ HP Follow-Up</button>
-    <button id="rpt-tab-hpenroll" onclick="switchReportTab('hpenroll')" style="font-size:13px;padding:8px 14px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--pt);cursor:pointer;font-weight:500;white-space:nowrap;flex-shrink:0">📅 HP Enrollment</button>
+  <div style="display:flex;gap:4px;border-bottom:0.5px solid var(--border);margin-bottom:1rem;overflow-x:auto;padding-bottom:0">
+    <button id="rpt-tab-weekly" onclick="switchReportTab('weekly')" style="font-size:12px;padding:7px 12px;border:none;border-bottom:2px solid var(--text);background:transparent;color:var(--text);cursor:pointer;font-weight:500;white-space:nowrap;flex-shrink:0;margin-bottom:-1px">By Date Range</button>
+    <button id="rpt-tab-monthly" onclick="switchReportTab('monthly')" style="font-size:12px;padding:7px 12px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--text2);cursor:pointer;white-space:nowrap;flex-shrink:0;margin-bottom:-1px">Monthly Summary</button>
+    <button id="rpt-tab-corrections" onclick="switchReportTab('corrections')" style="font-size:12px;padding:7px 12px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--text2);cursor:pointer;white-space:nowrap;flex-shrink:0;margin-bottom:-1px">Corrections</button>
+    <button id="rpt-tab-rebatepay" onclick="switchReportTab('rebatepay')" style="font-size:12px;padding:7px 12px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--st);cursor:pointer;font-weight:500;white-space:nowrap;flex-shrink:0;margin-bottom:-1px">💰 Rebate Payments</button>
+    <button id="rpt-tab-hp45" onclick="switchReportTab('hp45')" style="font-size:12px;padding:7px 12px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--dt);cursor:pointer;font-weight:500;white-space:nowrap;flex-shrink:0;margin-bottom:-1px">⏰ HP Follow-Up</button>
+    <button id="rpt-tab-hpenroll" onclick="switchReportTab('hpenroll')" style="font-size:12px;padding:7px 12px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--pt);cursor:pointer;font-weight:600;white-space:nowrap;flex-shrink:0;margin-bottom:-1px;background:var(--pbg);border-radius:6px 6px 0 0">📅 HP Enrollment</button>
   </div>
 
   <!-- Date Range (Weekly) Panel -->
@@ -3029,7 +3029,8 @@ showToast('Exported successfully!');
 function renderHP45Report(){
 const threshold=parseInt(document.getElementById('hp45-rpt-threshold')?.value||'45');
 const assigneeFilter=document.getElementById('hp45-rpt-assignee')?.value||'all';
-let list=projects.filter(p=>p.hpEnrolled&&daysSince(p.hpEnrolled)>=threshold);
+const HP45_EXCLUDE=new Set(['sent for payment','ready for payment','payment processed']);
+let list=projects.filter(p=>p.hpEnrolled&&daysSince(p.hpEnrolled)>=threshold&&!HP45_EXCLUDE.has((p.status||'').toLowerCase()));
 if(assigneeFilter!=='all')list=list.filter(p=>(p.assignee||'').toLowerCase().includes(assigneeFilter.toLowerCase()));
 list.sort((a,b)=>{const da=daysSince(a.hpEnrolled),db=daysSince(b.hpEnrolled);return(db||0)-(da||0);});
 const countEl=document.getElementById('hp45-rpt-count');
@@ -3062,7 +3063,8 @@ el.innerHTML=html;
 function exportHP45XLS(){
 const threshold=parseInt(document.getElementById('hp45-rpt-threshold')?.value||'45');
 const assigneeFilter=document.getElementById('hp45-rpt-assignee')?.value||'all';
-let list=projects.filter(p=>p.hpEnrolled&&daysSince(p.hpEnrolled)>=threshold);
+const HP45_EXCLUDE=new Set(['sent for payment','ready for payment','payment processed']);
+let list=projects.filter(p=>p.hpEnrolled&&daysSince(p.hpEnrolled)>=threshold&&!HP45_EXCLUDE.has((p.status||'').toLowerCase()));
 if(assigneeFilter!=='all')list=list.filter(p=>(p.assignee||'').toLowerCase().includes(assigneeFilter.toLowerCase()));
 list.sort((a,b)=>(daysSince(b.hpEnrolled)||0)-(daysSince(a.hpEnrolled)||0));
 if(!list.length){showToast('No projects to export.');return;}
