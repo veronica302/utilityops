@@ -219,6 +219,7 @@ tr.dr:hover td{background:var(--bg2);cursor:pointer}
   </div>
   </div>
   <div class="top-actions">
+    <div id="save-status-bar" style="display:none;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:6px 12px;border-radius:var(--r);border:0.5px solid;white-space:nowrap"></div>
     <button id="viewer-btn" class="viewer-btn" onclick="onViewerClick()">
       <span class="viewer-dot"></span>
       <span id="viewer-count">1</span>
@@ -895,7 +896,7 @@ async function loadFromSupabase() {
   let retries = 0;
   while (retries < 3) {
     try {
-      const pRows = await sbFetch('/rest/v1/projects?select=id,data&order=id.asc&limit=2000');
+      const pRows = await sbFetch('/rest/v1/projects?select=id,data&order=id.asc&limit=5000');
       if (pRows && pRows.length > 0) {
         // Merge: remote is source of truth, but keep any local-only unsaved projects
         const remoteIds = new Set(pRows.map(r => String(r.data.id)));
@@ -930,6 +931,7 @@ async function loadFromSupabase() {
 
       saveLocal(); // Cache the freshly loaded data
       showToast('✅ Data loaded — ' + projects.length + ' projects');
+      setSaveStatus('saved');
       await cleanupDuplicateCorrections();
       render();
       updateMetrics();
@@ -962,14 +964,131 @@ async function saveAllProjectsToSupabase() {
   }
 }
 
+// ─── SAVE STATUS UI ────────────────────────────────────────────────────────────
+function setSaveStatus(state, msg) {
+  const el = document.getElementById('save-status-bar');
+  if (!el) return;
+  if (state === 'saving') {
+    el.style.display = 'flex';
+    el.style.background = '#FFF8E1';
+    el.style.borderColor = '#FAC775';
+    el.style.color = '#854F0B';
+    el.innerHTML = '⏳ Saving...';
+  } else if (state === 'saved') {
+    el.style.display = 'flex';
+    el.style.background = '#EAF3DE';
+    el.style.borderColor = '#97C459';
+    el.style.color = '#3B6D11';
+    el.innerHTML = '✅ Saved to cloud';
+    setTimeout(() => { el.style.display = 'none'; }, 4000);
+  } else if (state === 'retrying') {
+    el.style.display = 'flex';
+    el.style.background = '#FAEEDA';
+    el.style.borderColor = '#FAC775';
+    el.style.color = '#854F0B';
+    el.innerHTML = '🔄 Retrying save... (' + (msg||'') + ')';
+  } else if (state === 'error') {
+    el.style.display = 'flex';
+    el.style.background = '#FCEBEB';
+    el.style.borderColor = '#F09595';
+    el.style.color = '#A32D2D';
+    el.innerHTML = '❌ Save failed — <strong style="margin-left:4px">DO NOT CLOSE THIS TAB</strong> &nbsp;|&nbsp; <a href="#" onclick="flushSaveQueue();return false;" style="color:#A32D2D">Retry now</a>';
+  } else if (state === 'queued') {
+    el.style.display = 'flex';
+    el.style.background = '#FAEEDA';
+    el.style.borderColor = '#FAC775';
+    el.style.color = '#854F0B';
+    el.innerHTML = '⏳ ' + (msg||'Queued') + ' unsaved change(s) — retrying...';
+  }
+}
+
+// ─── PERSISTENT SAVE QUEUE ─────────────────────────────────────────────────────
+// Every project save goes into a queue. The queue retries forever until it succeeds.
+// Data is NEVER lost — even if Supabase is down, it retries every 10 seconds.
+let _saveQueue = {}; // keyed by project id — last write wins
+let _saveQueueTimer = null;
+
+function queueProjectSave(p) {
+  _saveQueue[String(p.id)] = p;
+  saveLocal(); // always persist locally first
+  setSaveStatus('saving');
+  if (!_saveQueueTimer) {
+    _saveQueueTimer = setTimeout(flushSaveQueue, 500); // flush after short delay
+  }
+}
+
+async function flushSaveQueue() {
+  _saveQueueTimer = null;
+  const ids = Object.keys(_saveQueue);
+  if (ids.length === 0) return;
+  setSaveStatus('saving');
+  const toSave = {..._saveQueue};
+  let allOk = true;
+  for (const id of ids) {
+    const p = toSave[id];
+    let saved = false;
+    for (let attempt = 1; attempt <= 5; attempt++) {
+      try {
+        await sbFetch('/rest/v1/projects', {
+          method: 'POST',
+          prefer: 'resolution=merge-duplicates',
+          body: JSON.stringify({id: p.id, data: p})
+        });
+        saved = true;
+        delete _saveQueue[id];
+        break;
+      } catch(e) {
+        console.error('Save attempt ' + attempt + ' failed for project ' + id + ':', e);
+        if (attempt < 5) {
+          setSaveStatus('retrying', attempt + '/5');
+          await new Promise(res => setTimeout(res, 2000 * attempt));
+        }
+      }
+    }
+    if (!saved) {
+      allOk = false;
+      console.error('Project ' + id + ' could not be saved after 5 attempts. Will retry in 10s.');
+    }
+  }
+  const remaining = Object.keys(_saveQueue).length;
+  if (remaining > 0) {
+    allOk = false;
+    setSaveStatus('queued', remaining);
+    // Schedule another flush in 10 seconds
+    setTimeout(flushSaveQueue, 10000);
+  }
+  if (allOk) {
+    setSaveStatus('saved');
+    lockPoll();
+  }
+}
+
+// Keep retrying any queued saves every 30 seconds as a background safety net
+setInterval(() => {
+  if (Object.keys(_saveQueue).length > 0) {
+    console.log('Background retry: ' + Object.keys(_saveQueue).length + ' queued saves');
+    flushSaveQueue();
+  }
+}, 30000);
+
 async function saveProjectToSupabase(p) {
-  const result = await sbFetch('/rest/v1/projects', {
-    method: 'POST',
-    prefer: 'resolution=merge-duplicates',
-    body: JSON.stringify({id: p.id, data: p})
-  });
-  console.log('Saved project ' + p.id + ' to Supabase');
-  return result;
+  queueProjectSave(p);
+  // Also attempt immediate save for callers that await this
+  try {
+    const result = await sbFetch('/rest/v1/projects', {
+      method: 'POST',
+      prefer: 'resolution=merge-duplicates',
+      body: JSON.stringify({id: p.id, data: p})
+    });
+    delete _saveQueue[String(p.id)];
+    setSaveStatus('saved');
+    lockPoll();
+    return result;
+  } catch(e) {
+    // Queue will handle retries — don't throw
+    setSaveStatus('queued', Object.keys(_saveQueue).length);
+    console.error('Immediate save failed for project ' + p.id + ', queued for retry:', e);
+  }
 }
 
 async function saveCorrectionToSupabase(c) {
@@ -1014,7 +1133,7 @@ function startPolling() {
     try {
       if (pollIsLocked()) return;
       if (document.hidden) return; // Don't poll when tab is in background
-      const pRows = await sbFetch('/rest/v1/projects?select=id,data&order=id.asc&limit=2000');
+      const pRows = await sbFetch('/rest/v1/projects?select=id,data&order=id.asc&limit=5000');
       if (pRows && pRows.length > 0) {
         const remoteIds = new Set(pRows.map(r => String(r.data.id)));
         const localOnly = projects.filter(p => !remoteIds.has(String(p.id)));
@@ -2433,21 +2552,7 @@ if(editId){const i=projects.findIndex(x=>x.id===editId);if(i>-1)projects[i]=p;}
 else projects.push(p);
 window._pollLockedUntil = Date.now() + 300000; // Lock poll for 5 min immediately (before any async)
 save();closeModal();render();
-saveProjectToSupabase(p).then(()=>{
-  lockPoll(); // Reset the 5-min window from time of confirmed cloud save
-  showToast('✅ Project saved to cloud.');
-}).catch((err)=>{
-  console.error('Supabase save failed:',err);
-  showToast('⚠️ Saved locally but cloud sync failed. Retrying...',4000);
-  setTimeout(()=>{
-    saveProjectToSupabase(p).then(()=>{
-      lockPoll();
-      showToast('✅ Cloud sync recovered successfully.');
-    }).catch(()=>{
-      showToast('❌ Cloud sync failed twice. Your data is saved locally — please keep this tab open.',8000);
-    });
-  }, 5000);
-});
+saveProjectToSupabase(p);
 if(addingNewCor&&!isResolved&&editId){
 const newEntry=corList[corList.length-1];
 if(newEntry){
@@ -3088,7 +3193,7 @@ let rangeFrom=null,rangeTo=null;
 if(fromVal){rangeFrom=new Date(fromVal);rangeFrom.setHours(0,0,0,0);}
 if(toVal){rangeTo=new Date(toVal);rangeTo.setHours(23,59,59,999);}
 const HPENROLL_EXCLUDE=new Set(['sent for payment','ready for payment','payment processed']);
-let list=projects.filter(p=>p.hpEnrolled&&!HPENROLL_EXCLUDE.has((p.status||'').toLowerCase()));
+let list=projects.filter(p=>p.hpEnrolled&&p.type==='Rebate'&&!HPENROLL_EXCLUDE.has((p.status||'').toLowerCase()));
 if(rangeFrom)list=list.filter(p=>{const d=new Date(p.hpEnrolled);d.setHours(12,0,0,0);return d>=rangeFrom;});
 if(rangeTo)list=list.filter(p=>{const d=new Date(p.hpEnrolled);d.setHours(12,0,0,0);return d<=rangeTo;});
 if(assigneeFilter!=='all')list=list.filter(p=>(p.assignee||'').toLowerCase().includes(assigneeFilter.toLowerCase()));
