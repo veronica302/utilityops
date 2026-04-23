@@ -3019,6 +3019,8 @@ applyEditMode();
 registerViewer();
 startHeartbeat();
 window.addEventListener('beforeunload',removeViewer);
+// Init correction notifications after login
+setTimeout(()=>{if(typeof initNotifications==='function')initNotifications();},1500);
 }
 function applyEditMode(){
 const editEls=document.querySelectorAll('.edit-only');
@@ -3406,6 +3408,109 @@ downloadXLS(xml,'missing_hp_enrollment_'+new Date().toISOString().slice(0,10)+'.
 showToast('Exported successfully!');
 }
 load();updateStatusDropdown();render();applyEditMode();
+
+// ─── CORRECTION NOTIFICATION SYSTEM ────────────────────────────────────────
+// Fires browser notifications at 9:00 AM and 4:30 PM CST for unresolved corrections
+// Only notifies the logged-in user about their own corrections
+
+function getUnresolvedCorrectionsForUser(name){
+  if(!name)return[];
+  const lower=name.trim().toLowerCase();
+  // Match by first name (Joy, Althesa, Rachel)
+  const TEAM=['Joy','Althesa','Rachel'];
+  const match=TEAM.find(t=>lower.includes(t.toLowerCase()));
+  if(!match)return[];
+  // Build list of unresolved corrections for this person
+  const list=[];
+  projects.forEach(p=>{
+    const assignee=(p.assignee||'').toLowerCase();
+    if(!assignee.includes(match.toLowerCase()))return;
+    if(!p.hasCor)return;
+    // Check corList first
+    const corList=p.corList||[];
+    if(corList.length>0){
+      corList.forEach(c=>{
+        if((c.status||'').toLowerCase()!=='resolved'){
+          list.push({name:p.name,pid:p.pid,corType:c.corType||'Correction',corNotes:c.corNotes||''});
+        }
+      });
+    } else {
+      // Legacy single correction
+      if(p.corType){
+        list.push({name:p.name,pid:p.pid,corType:p.corType||'Correction',corNotes:p.corNotes||''});
+      }
+    }
+  });
+  return list;
+}
+
+function sendCorrectionNotification(type){
+  const name=myViewerName||window._myViewerName||'';
+  const unresolvedList=getUnresolvedCorrectionsForUser(name);
+  if(!unresolvedList.length)return;
+  if(!('Notification' in window)){return;}
+  const count=unresolvedList.length;
+  const title=type==='morning'
+    ? `⚠️ Good morning! You have ${count} unresolved correction${count!==1?'s':''}`
+    : `⏰ End of shift reminder: ${count} unresolved correction${count!==1?'s':''}`;
+  const body=unresolvedList.slice(0,3).map(c=>`• ${c.name}${c.pid?' ('+c.pid+')':''} — ${c.corType}`).join('\n')
+    +(count>3?`\n...and ${count-3} more`:'');
+  if(Notification.permission==='granted'){
+    new Notification(title,{body,icon:'',tag:'cor-notif-'+type});
+  } else if(Notification.permission==='default'){
+    Notification.requestPermission().then(perm=>{
+      if(perm==='granted'){
+        new Notification(title,{body,icon:'',tag:'cor-notif-'+type});
+      }
+    });
+  }
+}
+
+function scheduleCorrectionNotifications(){
+  // Check every minute if it's time to send a notification
+  setInterval(()=>{
+    const now=new Date();
+    // Convert to CST (UTC-6, or UTC-5 during DST)
+    // Use Intl to get CST time
+    const cstStr=now.toLocaleString('en-US',{timeZone:'America/Chicago'});
+    const cst=new Date(cstStr);
+    const h=cst.getHours();
+    const m=cst.getMinutes();
+    const todayKey=cst.toDateString();
+    // 9:00 AM CST
+    if(h===9&&m===0){
+      const storageKey='corNotif_morning_'+todayKey;
+      if(!sessionStorage.getItem(storageKey)){
+        sessionStorage.setItem(storageKey,'1');
+        sendCorrectionNotification('morning');
+      }
+    }
+    // 4:30 PM CST
+    if(h===16&&m===30){
+      const storageKey='corNotif_evening_'+todayKey;
+      if(!sessionStorage.getItem(storageKey)){
+        sessionStorage.setItem(storageKey,'1');
+        sendCorrectionNotification('evening');
+      }
+    }
+  },60000);
+}
+
+// Request notification permission and start scheduler after login
+function initNotifications(){
+  if(!('Notification' in window))return;
+  if(Notification.permission==='default'){
+    Notification.requestPermission();
+  }
+  scheduleCorrectionNotifications();
+}
+
+// Hook into login — init notifications after user logs in
+const _origOnLoginDone=window._onLoginDone;
+window._onLoginDone=function(name){
+  if(_origOnLoginDone)_origOnLoginDone(name);
+  setTimeout(()=>initNotifications(),2000);
+};
 
 
 
