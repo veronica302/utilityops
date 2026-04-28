@@ -2480,8 +2480,60 @@ function selectLinkedIC(id){
   document.getElementById('f-linked-ic-id').value=id;
   document.getElementById('f-linked-ic-search').value=p.name+(p.pid?' ('+p.pid+')':'');
   document.getElementById('ic-link-dropdown').style.display='none';
+
+  // ── AUTOPOPULATE COC fields from linked IC ──
+  const autofilled=[];
+
+  // HP Enrollment Date
+  if(p.hpEnrolled){
+    document.getElementById('f-coc-hp-enrolled').value=p.hpEnrolled;
+    autofilled.push('HP Enrollment Date ('+fmtDate(p.hpEnrolled)+')');
+  }
+  // Customer Name (only if blank)
+  const nameEl=document.getElementById('f-name');
+  if(nameEl&&!nameEl.value.trim()&&p.name){
+    nameEl.value=p.name;
+    autofilled.push('Customer Name');
+  }
+  // ComEd Project ID (only if blank)
+  const pidEl=document.getElementById('f-pid');
+  if(pidEl&&!pidEl.value.trim()&&p.pid){
+    pidEl.value=p.pid;
+    autofilled.push('Project ID');
+  }
+  // Address (only if blank)
+  const addrEl=document.getElementById('f-address');
+  if(addrEl&&!addrEl.value.trim()&&p.address){
+    addrEl.value=p.address;
+    autofilled.push('Address');
+  }
+  // Assignee (only if not set)
+  const assigneeEl=document.getElementById('f-assignee');
+  if(assigneeEl&&!assigneeEl.value&&p.assignee){
+    assigneeEl.value=p.assignee;
+    autofilled.push('Assignee');
+  }
+  // UB Name (only if blank)
+  const ubEl=document.getElementById('f-ubname');
+  if(ubEl&&!ubEl.value.trim()&&p.ubName){
+    ubEl.value=p.ubName;
+    autofilled.push('UB Name');
+  }
+  // PM Name (only if blank)
+  const pmEl=document.getElementById('f-pm');
+  if(pmEl&&!pmEl.value.trim()&&p.pmName){
+    pmEl.value=p.pmName;
+    autofilled.push('PM Name');
+  }
+
   const disp=document.getElementById('f-linked-ic-display');
-  disp.innerHTML='🔗 <strong>'+p.name+'</strong>'+(p.pid?' · ComEd ID: '+p.pid:'')+(p.icApprovedDate?'<span style="margin-left:8px;color:var(--st);font-size:12px">✓ IC Approved: '+p.icApprovedDate+'</span>':'<span style="margin-left:8px;color:var(--text3);font-size:12px">Status: '+p.status+'</span>')+'<button onclick="clearLinkedIC()" style="margin-left:8px;font-size:11px;padding:1px 6px;border-radius:4px;border:0.5px solid var(--border2);background:transparent;cursor:pointer;color:var(--text2)">✕ Remove</button>';
+  let html='<div style="display:flex;flex-direction:column;gap:6px">';
+  html+='<div>🔗 <strong>'+p.name+'</strong>'+(p.pid?' · ComEd ID: '+p.pid:'')+(p.icApprovedDate?'<span style="margin-left:8px;color:var(--st);font-size:12px">✓ IC Approved: '+fmtDate(p.icApprovedDate)+'</span>':'<span style="margin-left:8px;color:var(--text3);font-size:12px">Status: '+p.status+'</span>')+'<button onclick="clearLinkedIC()" style="margin-left:8px;font-size:11px;padding:1px 6px;border-radius:4px;border:0.5px solid var(--border2);background:transparent;cursor:pointer;color:var(--text2)">✕ Remove</button></div>';
+  if(autofilled.length){
+    html+='<div style="background:var(--sbg);border:0.5px solid var(--sb);border-radius:6px;padding:6px 10px;font-size:11px;color:var(--st)">✅ <strong>Autofilled from IC:</strong> '+autofilled.join(' · ')+'</div>';
+  }
+  html+='</div>';
+  disp.innerHTML=html;
   disp.style.display='block';
 }
 function clearLinkedIC(){
@@ -2508,8 +2560,60 @@ function selectLinkedCOC(id){
   document.getElementById('f-linked-coc-id').value=id;
   document.getElementById('f-linked-coc-search').value=p.name+(p.pid?' ('+p.pid+')':'');
   document.getElementById('coc-link-dropdown').style.display='none';
+
+  // ── AUTOPOPULATE Rebate fields from linked COC ──
+  const autofilled=[];
+
+  // HP Enrollment Date for Rebate days counter
+  if(p.hpEnrolled){
+    document.getElementById('f-rebate-hp-date').value=p.hpEnrolled;
+    autofilled.push('HP Enrollment Date ('+fmtDate(p.hpEnrolled)+')');
+  }
+  // Customer Name (only if blank)
+  const nameEl=document.getElementById('f-name');
+  if(nameEl&&!nameEl.value.trim()&&p.name){
+    nameEl.value=p.name;
+    autofilled.push('Customer Name');
+  }
+  // ComEd Project ID (only if blank)
+  const pidEl=document.getElementById('f-pid');
+  if(pidEl&&!pidEl.value.trim()&&p.pid){
+    pidEl.value=p.pid;
+    autofilled.push('Project ID');
+  }
+  // Address (only if blank)
+  const addrEl=document.getElementById('f-address');
+  if(addrEl&&!addrEl.value.trim()&&p.address){
+    addrEl.value=p.address;
+    autofilled.push('Address');
+  }
+  // Assignee (only if not set)
+  const assigneeEl=document.getElementById('f-assignee');
+  if(assigneeEl&&!assigneeEl.value&&p.assignee){
+    assigneeEl.value=p.assignee;
+    autofilled.push('Assignee');
+  }
+  // UB Name (only if blank)
+  const ubEl=document.getElementById('f-ubname');
+  if(ubEl&&!ubEl.value.trim()&&p.ubName){
+    ubEl.value=p.ubName;
+    autofilled.push('UB Name');
+  }
+  // PM Name (only if blank)
+  const pmEl=document.getElementById('f-pm');
+  if(pmEl&&!pmEl.value.trim()&&p.pmName){
+    pmEl.value=p.pmName;
+    autofilled.push('PM Name');
+  }
+
   const disp=document.getElementById('f-linked-coc-display');
-  disp.innerHTML='🔗 <strong>'+p.name+'</strong>'+(p.pid?' · ComEd ID: '+p.pid:'')+(p.cocApprovedDate?'<span style="margin-left:8px;color:var(--st);font-size:12px">✓ COC Approved: '+p.cocApprovedDate+'</span>':'<span style="margin-left:8px;color:var(--text3);font-size:12px">Status: '+p.status+'</span>')+'<button onclick="clearLinkedCOC()" style="margin-left:8px;font-size:11px;padding:1px 6px;border-radius:4px;border:0.5px solid var(--border2);background:transparent;cursor:pointer;color:var(--text2)">✕ Remove</button>';
+  let html='<div style="display:flex;flex-direction:column;gap:6px">';
+  html+='<div>\uD83D\uDD17 <strong>'+p.name+'</strong>'+(p.pid?' \xB7 ComEd ID: '+p.pid:'')+(p.cocApprovedDate?'<span style="margin-left:8px;color:var(--st);font-size:12px">\u2713 COC Approved: '+fmtDate(p.cocApprovedDate)+'</span>':'<span style="margin-left:8px;color:var(--text3);font-size:12px">Status: '+p.status+'</span>')+'<button onclick="clearLinkedCOC()" style="margin-left:8px;font-size:11px;padding:1px 6px;border-radius:4px;border:0.5px solid var(--border2);background:transparent;cursor:pointer;color:var(--text2)">\u2715 Remove</button></div>';
+  if(autofilled.length){
+    html+='<div style="background:var(--sbg);border:0.5px solid var(--sb);border-radius:6px;padding:6px 10px;font-size:11px;color:var(--st)">\u2705 <strong>Autofilled from COC:</strong> '+autofilled.join(' \xB7 ')+'</div>';
+  }
+  html+='</div>';
+  disp.innerHTML=html;
   disp.style.display='block';
 }
 function clearLinkedCOC(){
