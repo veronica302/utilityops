@@ -334,6 +334,7 @@ tr.dr.flagged-row td{background:#fffdf0}
       <button class="tab" onclick="setMainTab('COC',this)">COC</button>
       <button class="tab" onclick="setMainTab('Rebate',this)">Rebate</button>
       <button class="tab" onclick="setMainTab('COR',this)">Corrections</button>
+      <button class="tab" id="my-work-tab" onclick="setMainTab('mywork',this)" style="color:var(--it);font-weight:500">My Work</button>
     </div>
     <input type="text" id="search-inp" placeholder="Search name, ComEd ID, UB name..." oninput="setSearch(this.value)" style="font-size:13px;padding:7px 16px;border-radius:20px;border:1px solid var(--border2);background:var(--bg);color:var(--text);outline:none;width:260px;margin-bottom:4px;font-family:inherit">
   </div>
@@ -391,7 +392,7 @@ tr.dr.flagged-row td{background:#fffdf0}
   <button id="qfb-nys-rebate" onclick="clickMetric('nys-rebate')" class="qf-btn">Rebate &nbsp;<span id="qf-nys-rebate" style="font-weight:600">0</span></button>
 </div>
 
-<div class="controls">
+<div class="controls" id="main-controls">
   <button class="filter-btn active" onclick="setFilter('all',this)">All</button>
   <button class="filter-btn" onclick="setFilter('corrections',this)">Needs Attention</button>
   <button class="filter-btn" onclick="setFilter('joy',this)">Joy</button>
@@ -441,6 +442,44 @@ tr.dr.flagged-row td{background:#fffdf0}
   <div class="empty" id="empty-state" style="display:none">No projects match your filters.</div>
   <div class="pagination" id="pagination" style="display:none"></div>
 </div>
+</div>
+
+<!-- My Work Dashboard -->
+<div id="my-work-panel" style="display:none">
+<style>
+.mw-metrics{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:18px}
+.mw-mc{background:var(--bg);border:1px solid var(--border2);border-radius:var(--rl);padding:14px 18px}
+.mw-mc-lbl{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px}
+.mw-mc-val{font-size:34px;font-weight:600;line-height:1;letter-spacing:-.02em}
+.mw-mc-sub{font-size:12px;color:var(--text3);margin-top:4px}
+.mw-row2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.mw-card{background:var(--bg);border:1px solid var(--border2);border-radius:var(--rl);padding:1rem 1.25rem}
+.mw-card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.mw-card-lbl{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text3)}
+.mw-card-badge{font-size:11px;font-weight:500;padding:2px 9px;border-radius:20px}
+.mw-item{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:.5px solid var(--border)}
+.mw-item:last-child{border-bottom:none}
+.mw-item-name{font-size:13px;font-weight:500;color:var(--text)}
+.mw-item-meta{font-size:12px;color:var(--text2);margin-top:2px}
+.mw-pill{font-size:11px;font-weight:500;padding:2px 9px;border-radius:20px;white-space:nowrap;flex-shrink:0;margin-top:2px}
+.mw-dot{width:8px;height:8px;border-radius:50%;margin-top:5px;flex-shrink:0}
+.mw-cor-item{display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:.5px solid var(--border)}
+.mw-cor-item:last-child{border-bottom:none}
+.mw-ae{border-left:2px solid var(--border2);padding:6px 10px;margin-bottom:6px}
+.mw-ae:last-child{margin-bottom:0}
+.mw-ae-meta{font-size:11px;color:var(--text3);margin-bottom:2px}
+.mw-ae-text{font-size:13px;color:var(--text);line-height:1.5}
+.mw-empty{font-size:13px;color:var(--text3);text-align:center;padding:1.5rem 0}
+@media(max-width:800px){.mw-metrics{grid-template-columns:repeat(3,1fr)}.mw-row2{grid-template-columns:1fr}}
+</style>
+<div id="mw-greeting" style="margin-bottom:16px">
+  <div style="font-size:18px;font-weight:600;letter-spacing:-.01em;color:var(--text)" id="mw-greeting-text">Good morning 👋</div>
+  <div style="font-size:13px;color:var(--text3);margin-top:3px" id="mw-date-text"></div>
+</div>
+<div class="mw-metrics" id="mw-metrics"></div>
+<div class="mw-row2" id="mw-row1"></div>
+<div class="mw-row2" id="mw-row2"></div>
+<div class="mw-card" id="mw-activity-card" style="margin-bottom:14px"></div>
 </div>
 
 <!-- Weekly Report Modal -->
@@ -3571,6 +3610,259 @@ const xml=buildXLSX([{name:'Missing HP Enrollment',rows:[headers,...rows]}]);
 downloadXLS(xml,'missing_hp_enrollment_'+new Date().toISOString().slice(0,10)+'.xls');
 showToast('Exported successfully!');
 }
+// ─── MY WORK DASHBOARD ────────────────────────────────────────────────────────
+var _myWorkActive=false;
+
+function getMyWorkName(){
+  // Extract first name Joy / Althesa / Rachel from myViewerName
+  const TEAM=['Joy','Althesa','Rachel'];
+  const lower=(myViewerName||'').toLowerCase();
+  return TEAM.find(t=>lower.includes(t.toLowerCase()))||'';
+}
+
+function setMainTabMyWork(){
+  _myWorkActive=true;
+  // Hide main tracker elements
+  document.querySelector('.metrics').style.display='none';
+  document.getElementById('alerts').style.display='none';
+  document.getElementById('qf-pending-row') && (document.getElementById('qf-pending-row').style.display='none');
+  document.getElementById('qf-hp45-row') && (document.getElementById('qf-hp45-row').style.display='none');
+  document.getElementById('qf-nys-row') && (document.getElementById('qf-nys-row').style.display='none');
+  document.getElementById('status-pills-row').style.display='none';
+  document.querySelector('.export-row').style.display='none';
+  document.querySelector('.table-wrap').style.display='none';
+  document.getElementById('rebate-banner').style.display='none';
+  // Show sub-tab bar with assignee switcher
+  document.getElementById('sub-tabs').classList.remove('visible');
+  renderMyWork();
+  document.getElementById('my-work-panel').style.display='block';
+}
+
+function hideMyWork(){
+  _myWorkActive=false;
+  document.getElementById('my-work-panel').style.display='none';
+  document.querySelector('.metrics').style.display='';
+  document.getElementById('alerts').style.display='';
+  document.getElementById('status-pills-row').style.display='';
+  document.querySelector('.export-row').style.display='';
+  document.querySelector('.table-wrap').style.display='';
+}
+
+// Patch setMainTab to handle mywork
+var _origSetMainTab=setMainTab;
+setMainTab=function(t,btn,silent){
+  if(t==='mywork'){
+    // Deactivate all tabs then activate this one
+    document.querySelectorAll('#main-tabs .tab').forEach(b=>b.classList.remove('active'));
+    if(btn)btn.classList.add('active');
+    document.getElementById('sub-tabs').classList.remove('visible');
+    // Hide the controls row
+    var ctrlRow=document.getElementById('main-controls');
+    if(ctrlRow)ctrlRow.style.display='none';
+    setMainTabMyWork();
+    return;
+  }
+  // Restore controls if switching away from mywork
+  if(_myWorkActive){
+    hideMyWork();
+    var ctrlRow=document.getElementById('main-controls');
+    if(ctrlRow)ctrlRow.style.display='';
+  }
+  _origSetMainTab(t,btn,silent);
+};
+
+function renderMyWork(overrideName){
+  var name=overrideName||getMyWorkName();
+  // Greeting
+  var hour=new Date().getHours();
+  var greetWord=hour<12?'Good morning':hour<17?'Good afternoon':'Good evening';
+  var greetEl=document.getElementById('mw-greeting-text');
+  var dateEl=document.getElementById('mw-date-text');
+  if(greetEl)greetEl.innerHTML=greetWord+(name?' <span style="color:var(--it)">'+name+'</span>':'')+' 👋';
+  if(dateEl)dateEl.textContent=new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'})+' — Here\'s your workload at a glance';
+
+  // If no recognized name, show a message
+  if(!name){
+    var panel=document.getElementById('my-work-panel');
+    if(panel){
+      var inner=panel.querySelector('#mw-metrics');
+      if(inner)inner.innerHTML='<div style="grid-column:1/-1;padding:1rem;font-size:13px;color:var(--text2)">My Work is personalized for Joy, Althesa, or Rachel. Log in with your name to see your workload.</div>';
+    }
+    document.getElementById('mw-row1').innerHTML='';
+    document.getElementById('mw-row2').innerHTML='';
+    document.getElementById('mw-activity-card').innerHTML='';
+    return;
+  }
+
+  var nl=name.toLowerCase();
+  var myProjects=projects.filter(function(p){return(p.assignee||'').toLowerCase().includes(nl);});
+
+  // ── Metric counts ──
+  var RESOLVED_STATUSES=new Set(['approved','payment processed','sent for payment','ready for payment','enrolled','resolved']);
+  var PAY_STATUSES=new Set(['sent for payment','ready for payment','payment processed']);
+  var HP45_PAID=new Set(['sent for payment','ready for payment','payment processed']);
+  var PENDING_REBATE_EXCLUDED=new Set(['sent for payment','ready for payment','payment processed']);
+
+  var totalCount=myProjects.length;
+
+  // Open corrections for my projects
+  var openCors=[];
+  myProjects.forEach(function(p){
+    var corList=p.corList||[];
+    if(corList.length){
+      corList.forEach(function(c){if(c.status!=='Resolved')openCors.push({project:p,cor:c});});
+    } else if(p.hasCor&&p.corNotes){
+      openCors.push({project:p,cor:{corType:p.corType,corReceived:p.corReceived,corDue:p.corDue,corNotes:p.corNotes,status:'Open'}});
+    }
+    // Also check standalone corrections
+    corrections.forEach(function(c){
+      if(c.status==='Resolved')return;
+      if(String(c.linkedProjectId)===String(p.id)){
+        var already=openCors.some(function(x){return x.project.id===p.id&&(x.cor.corNotes||'').trim()===(c.corNotes||'').trim();});
+        if(!already)openCors.push({project:p,cor:c});
+      }
+    });
+  });
+  // Deduplicate
+  var seenCorKeys=new Set();
+  openCors=openCors.filter(function(x){
+    var k=String(x.project.id)+'|'+(x.cor.corType||'')+'|'+(x.cor.corNotes||'').trim();
+    if(seenCorKeys.has(k))return false;seenCorKeys.add(k);return true;
+  });
+
+  // HP past 45 days
+  var hp45=myProjects.filter(function(p){
+    return p.hpEnrolled&&daysSince(p.hpEnrolled)>=45&&!HP45_PAID.has((p.status||'').toLowerCase());
+  });
+
+  // Pending rebates (all statuses except Sent for Payment, Ready for Payment, Payment Processed)
+  var pendingRebates=myProjects.filter(function(p){
+    if(p.type!=='Rebate')return false;
+    return!PENDING_REBATE_EXCLUDED.has((p.status||'').toLowerCase());
+  });
+
+  // Missing HP date: type=HP or hpEnrolled field referenced but empty
+  var missingHP=myProjects.filter(function(p){
+    // Any project where HP enrollment date is expected but missing
+    // Criteria: type is HP or COC with HP flag or Rebate with hpEnrolled referenced, but hpEnrolled is empty
+    var isHPType=(p.type==='HP');
+    var isCOCWithHP=(p.type==='COC'&&p.subtype==='HP');
+    var isRebateWithHP=(p.type==='Rebate'&&!p.hpEnrolled&&p.rebateProgram&&p.rebateProgram.toLowerCase().includes('hp'));
+    var hasMissingHP=(isHPType||isCOCWithHP||isRebateWithHP)&&!p.hpEnrolled;
+    // Also catch any project that has hpEnrolled field referenced as empty
+    var generalMissing=!p.hpEnrolled&&(p.type==='COC'||p.type==='Rebate')&&!RESOLVED_STATUSES.has((p.status||'').toLowerCase());
+    return generalMissing;
+  });
+
+  // ── Render Metrics ──
+  var mEl=document.getElementById('mw-metrics');
+  function mCard(lbl,val,color,sub){
+    return'<div class="mw-mc"><div class="mw-mc-lbl">'+lbl+'</div><div class="mw-mc-val" style="color:'+color+'">'+val+'</div><div class="mw-mc-sub">'+(sub||'&nbsp;')+'</div></div>';
+  }
+  mEl.innerHTML=
+    mCard('My Projects',totalCount,'var(--it)','total assigned')+
+    mCard('Open Corrections',openCors.length,'var(--dt)','unresolved')+
+    mCard('HP Past 45 Days',hp45.length,'var(--wt)','need follow-up')+
+    mCard('Pending Rebates',pendingRebates.length,'#0f766e','need follow-up')+
+    mCard('Missing HP Date',missingHP.length,'var(--pt)','no enrollment date');
+
+  // ── Row 1: Open Corrections + Missing HP ──
+  var r1=document.getElementById('mw-row1');
+
+  // Corrections card
+  var corHtml='<div class="mw-card"><div class="mw-card-hdr"><div class="mw-card-lbl">Open Corrections</div><span class="mw-card-badge" style="background:#fee2e2;color:#991b1b">'+openCors.length+' open</span></div>';
+  if(!openCors.length){corHtml+='<div class="mw-empty">No open corrections 🎉</div>';}
+  else{
+    openCors.slice(0,6).forEach(function(x){
+      var p=x.project;var c=x.cor;
+      var isOpen=(c.status||'Open')!=='Resolved';
+      var dotColor=isOpen?'#dc2626':'#d97706';
+      var badgeStyle=isOpen?'background:#fee2e2;color:#991b1b':'background:#fef3c7;color:#92400e';
+      corHtml+='<div class="mw-cor-item"><div class="mw-dot" style="background:'+dotColor+'"></div><div style="flex:1">';
+      corHtml+='<div class="mw-item-name" style="cursor:pointer" onclick="showDetail('+p.id+')">'+p.name+'</div>';
+      corHtml+='<div class="mw-item-meta">'+(p.pid||'--')+' &middot; '+(c.corType||'Correction')+'</div>';
+      corHtml+='<span class="mw-pill" style="'+badgeStyle+';display:inline-block;margin-top:3px">'+(isOpen?'Open':'Pending')+'</span>';
+      corHtml+='</div></div>';
+    });
+    if(openCors.length>6)corHtml+='<div style="font-size:12px;color:var(--text3);padding:6px 0 0">+' +(openCors.length-6)+' more</div>';
+  }
+  corHtml+='</div>';
+
+  // Missing HP card
+  var hpMissHtml='<div class="mw-card"><div class="mw-card-hdr"><div class="mw-card-lbl">Missing HP Enrollment Date</div><span class="mw-card-badge" style="background:#f3e8ff;color:#7e22ce">'+missingHP.length+' projects</span></div>';
+  if(!missingHP.length){hpMissHtml+='<div class="mw-empty">All HP dates are filled in ✓</div>';}
+  else{
+    missingHP.slice(0,6).forEach(function(p){
+      hpMissHtml+='<div class="mw-item"><div><div class="mw-item-name" style="cursor:pointer" onclick="showDetail('+p.id+')">'+p.name+'</div><div class="mw-item-meta">'+(p.pid||'--')+' &middot; '+(p.type||'')+(p.subtype?' · '+p.subtype:'')+'</div></div><span class="mw-pill" style="background:#f3e8ff;color:#7e22ce">No date set</span></div>';
+    });
+    if(missingHP.length>6)hpMissHtml+='<div style="font-size:12px;color:var(--text3);padding:6px 0 0">+'+(missingHP.length-6)+' more</div>';
+  }
+  hpMissHtml+='</div>';
+  r1.innerHTML=corHtml+hpMissHtml;
+
+  // ── Row 2: Pending Rebates + HP Follow-Up ──
+  var r2=document.getElementById('mw-row2');
+
+  // Pending rebates card
+  var rebHtml='<div class="mw-card"><div class="mw-card-hdr"><div class="mw-card-lbl">Pending Rebates</div><span class="mw-card-badge" style="background:#ccfbf1;color:#0f766e">'+pendingRebates.length+' projects</span></div>';
+  if(!pendingRebates.length){rebHtml+='<div class="mw-empty">No pending rebates</div>';}
+  else{
+    pendingRebates.slice(0,6).forEach(function(p){
+      var st=(p.status||'');
+      var stLower=st.toLowerCase();
+      var pillStyle=stLower==='on hold'?'background:#f5f5f4;color:#57534e':'background:#ccfbf1;color:#0f766e';
+      rebHtml+='<div class="mw-item"><div><div class="mw-item-name" style="cursor:pointer" onclick="showDetail('+p.id+')">'+p.name+'</div><div class="mw-item-meta">'+(p.pid||'--')+' &middot; '+(p.rebateProgram||p.subtype||'Rebate')+'</div></div><span class="mw-pill" style="'+pillStyle+'">'+st+'</span></div>';
+    });
+    if(pendingRebates.length>6)rebHtml+='<div style="font-size:12px;color:var(--text3);padding:6px 0 0">+'+(pendingRebates.length-6)+' more</div>';
+  }
+  rebHtml+='</div>';
+
+  // HP follow-up card
+  var hp45sorted=hp45.slice().sort(function(a,b){return(daysSince(b.hpEnrolled)||0)-(daysSince(a.hpEnrolled)||0);});
+  var hpHtml='<div class="mw-card"><div class="mw-card-hdr"><div class="mw-card-lbl">HP Follow-Up Needed</div><span class="mw-card-badge" style="background:#fef3c7;color:#92400e">'+hp45.length+' projects</span></div>';
+  if(!hp45.length){hpHtml+='<div class="mw-empty">No HP projects past 45 days ✓</div>';}
+  else{
+    hp45sorted.slice(0,6).forEach(function(p){
+      var d=daysSince(p.hpEnrolled);
+      var pillStyle=d>90?'background:#fee2e2;color:#991b1b':d>60?'background:#fef3c7;color:#92400e':'background:#dbeafe;color:#1e40af';
+      hpHtml+='<div class="mw-item"><div><div class="mw-item-name" style="cursor:pointer" onclick="showDetail('+p.id+')">'+p.name+'</div><div class="mw-item-meta">'+(p.pid||'--')+' &middot; Enrolled '+fmtDate(p.hpEnrolled)+'</div></div><span class="mw-pill" style="'+pillStyle+'">'+d+' days</span></div>';
+    });
+    if(hp45.length>6)hpHtml+='<div style="font-size:12px;color:var(--text3);padding:6px 0 0">+'+(hp45.length-6)+' more</div>';
+  }
+  hpHtml+='</div>';
+  r2.innerHTML=rebHtml+hpHtml;
+
+  // ── Recent Activity ──
+  var actEl=document.getElementById('mw-activity-card');
+  var allLogs=[];
+  myProjects.forEach(function(p){
+    var log=p.activityLog||[];
+    log.forEach(function(e){allLogs.push({entry:e,project:p});});
+  });
+  allLogs.sort(function(a,b){return new Date(b.entry.ts)-new Date(a.entry.ts);});
+  var recent=allLogs.slice(0,6);
+  var actHtml='<div class="mw-card-hdr"><div class="mw-card-lbl">Recent Activity on My Projects</div></div>';
+  if(!recent.length){actHtml+='<div class="mw-empty">No activity logged yet.</div>';}
+  else{
+    actHtml+='<div>';
+    recent.forEach(function(x){
+      var accentColor='var(--ib)';
+      actHtml+='<div class="mw-ae" style="border-left-color:'+accentColor+'">';
+      actHtml+='<div class="mw-ae-meta">'+new Date(x.entry.ts).toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})+' &middot; <span style="cursor:pointer;color:var(--it)" onclick="showDetail('+x.project.id+')">'+x.project.name+'</span></div>';
+      actHtml+='<div class="mw-ae-text">'+(x.entry.text||'').slice(0,160)+'</div></div>';
+    });
+    actHtml+='</div>';
+  }
+  actEl.innerHTML=actHtml;
+}
+
+// Re-render My Work when data reloads
+var _origUpdateMetrics=updateMetrics;
+updateMetrics=function(){
+  _origUpdateMetrics();
+  if(_myWorkActive)renderMyWork();
+};
+
 load();updateStatusDropdown();render();applyEditMode();
 
 // ─── CORRECTION NOTIFICATION SYSTEM ────────────────────────────────────────
