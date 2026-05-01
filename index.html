@@ -335,7 +335,6 @@ tr.dr.flagged-row td{background:#fffdf0}
       <button class="tab" onclick="setMainTab('Rebate',this)">Rebate</button>
       <button class="tab" onclick="setMainTab('COR',this)">Corrections</button>
       <button class="tab" id="my-work-tab" onclick="setMainTab('mywork',this)" style="color:var(--it);font-weight:500">My Work</button>
-      <button class="tab" id="team-overview-tab" onclick="setMainTab('teamoverview',this)" style="color:var(--st);font-weight:500">Team Overview</button>
     </div>
     <input type="text" id="search-inp" placeholder="Search name, ComEd ID, UB name..." oninput="setSearch(this.value)" style="font-size:13px;padding:7px 16px;border-radius:20px;border:1px solid var(--border2);background:var(--bg);color:var(--text);outline:none;width:260px;margin-bottom:4px;font-family:inherit">
   </div>
@@ -3676,20 +3675,36 @@ function setMainTabMyWork(){
   document.querySelector('.export-row').style.display='none';
   document.querySelector('.table-wrap').style.display='none';
   document.getElementById('rebate-banner').style.display='none';
-  // Show sub-tab bar with assignee switcher
+  document.getElementById('main-controls').style.display='none';
   document.getElementById('sub-tabs').classList.remove('visible');
-  renderMyWork();
-  document.getElementById('my-work-panel').style.display='block';
+
+  // Veronica (owner) sees Team Overview; team members see their own dashboard
+  var isVeronica=(myViewerName||'').trim().toLowerCase().includes('veronica')||(myViewerName||'').trim().toLowerCase()==='v';
+  var isOwner=pinUnlocked||isVeronica;
+  var teamName=getMyWorkName();
+
+  if(isOwner){
+    document.getElementById('my-work-panel').style.display='none';
+    renderTeamOverview();
+    document.getElementById('team-overview-panel').style.display='block';
+  } else {
+    document.getElementById('team-overview-panel').style.display='none';
+    renderMyWork();
+    document.getElementById('my-work-panel').style.display='block';
+  }
 }
 
 function hideMyWork(){
   _myWorkActive=false;
   document.getElementById('my-work-panel').style.display='none';
+  document.getElementById('team-overview-panel').style.display='none';
   document.querySelector('.metrics').style.display='';
   document.getElementById('alerts').style.display='';
   document.getElementById('status-pills-row').style.display='';
   document.querySelector('.export-row').style.display='';
   document.querySelector('.table-wrap').style.display='';
+  var ctrlRow=document.getElementById('main-controls');
+  if(ctrlRow)ctrlRow.style.display='';
 }
 
 // Patch setMainTab to handle mywork
@@ -3699,33 +3714,11 @@ setMainTab=function(t,btn,silent){
     document.querySelectorAll('#main-tabs .tab').forEach(b=>b.classList.remove('active'));
     if(btn)btn.classList.add('active');
     document.getElementById('sub-tabs').classList.remove('visible');
-    var ctrlRow=document.getElementById('main-controls');
-    if(ctrlRow)ctrlRow.style.display='none';
-    if(_teamOverviewActive)hideTeamOverview();
     setMainTabMyWork();
     return;
   }
-  if(t==='teamoverview'){
-    document.querySelectorAll('#main-tabs .tab').forEach(b=>b.classList.remove('active'));
-    if(btn)btn.classList.add('active');
-    document.getElementById('sub-tabs').classList.remove('visible');
-    var ctrlRow=document.getElementById('main-controls');
-    if(ctrlRow)ctrlRow.style.display='none';
-    if(_myWorkActive)hideMyWork();
-    setMainTabTeamOverview();
-    return;
-  }
-  // Restore controls if switching away from mywork or teamoverview
-  if(_myWorkActive){
-    hideMyWork();
-    var ctrlRow=document.getElementById('main-controls');
-    if(ctrlRow)ctrlRow.style.display='';
-  }
-  if(_teamOverviewActive){
-    hideTeamOverview();
-    var ctrlRow=document.getElementById('main-controls');
-    if(ctrlRow)ctrlRow.style.display='';
-  }
+  // Switching away from mywork — restore everything
+  if(_myWorkActive) hideMyWork();
   _origSetMainTab(t,btn,silent);
 };
 
