@@ -3792,18 +3792,8 @@ function renderMyWork(overrideName){
     return!PENDING_REBATE_EXCLUDED.has((p.status||'').toLowerCase());
   });
 
-  // Missing HP date: type=HP or hpEnrolled field referenced but empty
-  var missingHP=myProjects.filter(function(p){
-    // Any project where HP enrollment date is expected but missing
-    // Criteria: type is HP or COC with HP flag or Rebate with hpEnrolled referenced, but hpEnrolled is empty
-    var isHPType=(p.type==='HP');
-    var isCOCWithHP=(p.type==='COC'&&p.subtype==='HP');
-    var isRebateWithHP=(p.type==='Rebate'&&!p.hpEnrolled&&p.rebateProgram&&p.rebateProgram.toLowerCase().includes('hp'));
-    var hasMissingHP=(isHPType||isCOCWithHP||isRebateWithHP)&&!p.hpEnrolled;
-    // Also catch any project that has hpEnrolled field referenced as empty
-    var generalMissing=!p.hpEnrolled&&(p.type==='COC'||p.type==='Rebate')&&!RESOLVED_STATUSES.has((p.status||'').toLowerCase());
-    return generalMissing;
-  });
+  // Missing HP date — use exact same logic as the Missing HP Enrollment report
+  var missingHP=getHPMissingList(name);
 
   // ── Render Metrics ──
   var mEl=document.getElementById('mw-metrics');
@@ -3835,7 +3825,7 @@ function renderMyWork(overrideName){
       corHtml+='<span class="mw-pill" style="'+badgeStyle+';display:inline-block;margin-top:3px">'+(isOpen?'Open':'Pending')+'</span>';
       corHtml+='</div></div>';
     });
-    if(openCors.length>6)corHtml+='<div style="font-size:12px;color:var(--text3);padding:6px 0 0">+' +(openCors.length-6)+' more</div>';
+    if(openCors.length>6)corHtml+='<div style="font-size:12px;padding:6px 0 0"><a href="#" onclick="event.preventDefault();mwViewAll(\'cor\',\''+name+'\')" style="color:var(--it);font-weight:500;text-decoration:none;border-bottom:1px dashed var(--ib)">+'+(openCors.length-6)+' more — view all &rarr;</a></div>';
   }
   corHtml+='</div>';
 
@@ -3846,7 +3836,7 @@ function renderMyWork(overrideName){
     missingHP.slice(0,6).forEach(function(p){
       hpMissHtml+='<div class="mw-item"><div><div class="mw-item-name" style="cursor:pointer" onclick="showDetail('+p.id+')">'+p.name+'</div><div class="mw-item-meta">'+(p.pid||'--')+' &middot; '+(p.type||'')+(p.subtype?' · '+p.subtype:'')+'</div></div><span class="mw-pill" style="background:#f3e8ff;color:#7e22ce">No date set</span></div>';
     });
-    if(missingHP.length>6)hpMissHtml+='<div style="font-size:12px;color:var(--text3);padding:6px 0 0">+'+(missingHP.length-6)+' more</div>';
+    if(missingHP.length>6)hpMissHtml+='<div style="font-size:12px;padding:6px 0 0"><a href="#" onclick="event.preventDefault();mwViewAll(\'hpmissing\',\''+name+'\')" style="color:var(--pt);font-weight:500;text-decoration:none;border-bottom:1px dashed var(--pb)">+'+(missingHP.length-6)+' more — view all &rarr;</a></div>';
   }
   hpMissHtml+='</div>';
   r1.innerHTML=corHtml+hpMissHtml;
@@ -3864,7 +3854,7 @@ function renderMyWork(overrideName){
       var pillStyle=stLower==='on hold'?'background:#f5f5f4;color:#57534e':'background:#ccfbf1;color:#0f766e';
       rebHtml+='<div class="mw-item"><div><div class="mw-item-name" style="cursor:pointer" onclick="showDetail('+p.id+')">'+p.name+'</div><div class="mw-item-meta">'+(p.pid||'--')+' &middot; '+(p.rebateProgram||p.subtype||'Rebate')+'</div></div><span class="mw-pill" style="'+pillStyle+'">'+st+'</span></div>';
     });
-    if(pendingRebates.length>6)rebHtml+='<div style="font-size:12px;color:var(--text3);padding:6px 0 0">+'+(pendingRebates.length-6)+' more</div>';
+    if(pendingRebates.length>6)rebHtml+='<div style="font-size:12px;padding:6px 0 0"><a href="#" onclick="event.preventDefault();mwViewAll(\'rebate\',\''+name+'\')" style="color:#0f766e;font-weight:500;text-decoration:none;border-bottom:1px dashed #5eead4">+'+(pendingRebates.length-6)+' more — view all &rarr;</a></div>';
   }
   rebHtml+='</div>';
 
@@ -3878,7 +3868,7 @@ function renderMyWork(overrideName){
       var pillStyle=d>90?'background:#fee2e2;color:#991b1b':d>60?'background:#fef3c7;color:#92400e':'background:#dbeafe;color:#1e40af';
       hpHtml+='<div class="mw-item"><div><div class="mw-item-name" style="cursor:pointer" onclick="showDetail('+p.id+')">'+p.name+'</div><div class="mw-item-meta">'+(p.pid||'--')+' &middot; Enrolled '+fmtDate(p.hpEnrolled)+'</div></div><span class="mw-pill" style="'+pillStyle+'">'+d+' days</span></div>';
     });
-    if(hp45.length>6)hpHtml+='<div style="font-size:12px;color:var(--text3);padding:6px 0 0">+'+(hp45.length-6)+' more</div>';
+    if(hp45.length>6)hpHtml+='<div style="font-size:12px;padding:6px 0 0"><a href="#" onclick="event.preventDefault();mwViewAll(\'hp45\',\''+name+'\')" style="color:var(--wt);font-weight:500;text-decoration:none;border-bottom:1px dashed var(--wb)">+'+(hp45.length-6)+' more — view all &rarr;</a></div>';
   }
   hpHtml+='</div>';
   r2.innerHTML=rebHtml+hpHtml;
@@ -3978,10 +3968,8 @@ function getMWDataForName(name){
     return!PENDING_REBATE_EXCLUDED.has((p.status||'').toLowerCase());
   });
 
-  // Missing HP date
-  var missingHP=myProjects.filter(function(p){
-    return!p.hpEnrolled&&(p.type==='COC'||p.type==='Rebate')&&!RESOLVED_STATUSES.has((p.status||'').toLowerCase());
-  });
+  // Missing HP date — use exact same logic as the Missing HP Enrollment report
+  var missingHP=getHPMissingList(name);
 
   return{myProjects,openCors,hp45,pendingRebates,missingHP};
 }
@@ -4051,7 +4039,7 @@ function renderTeamOverview(){
         var isOpen=(x.cor.status||'Open')!=='Resolved';
         html+='<div class="to-item"><div><div class="to-item-name" onclick="showDetail('+x.project.id+')">'+x.project.name+'</div><div class="to-item-meta">'+(x.project.pid||'--')+' · '+(x.cor.corType||'Correction')+'</div></div><span class="to-pill" style="background:#fee2e2;color:#991b1b">'+(isOpen?'Open':'Pending')+'</span></div>';
       });
-      if(d.openCors.length>4)html+='<div style="font-size:11px;color:var(--text3);padding:4px 0">+'+(d.openCors.length-4)+' more</div>';
+      if(d.openCors.length>4)html+='<div style="font-size:11px;padding:4px 0"><a href="#" onclick="event.preventDefault();mwViewAll(\'cor\',\''+name+'\')" style="color:var(--it);font-weight:500;text-decoration:none;border-bottom:1px dashed var(--ib)">+'+(d.openCors.length-4)+' more — view all &rarr;</a></div>';
     }
     html+='</div>';
 
@@ -4064,7 +4052,7 @@ function renderTeamOverview(){
         var pillStyle=days>90?'background:#fee2e2;color:#991b1b':days>60?'background:#fef3c7;color:#92400e':'background:#dbeafe;color:#1e40af';
         html+='<div class="to-item"><div><div class="to-item-name" onclick="showDetail('+p.id+')">'+p.name+'</div><div class="to-item-meta">'+(p.pid||'--')+' · '+fmtDate(p.hpEnrolled)+'</div></div><span class="to-pill" style="'+pillStyle+'">'+days+'d</span></div>';
       });
-      if(d.hp45.length>4)html+='<div style="font-size:11px;color:var(--text3);padding:4px 0">+'+(d.hp45.length-4)+' more</div>';
+      if(d.hp45.length>4)html+='<div style="font-size:11px;padding:4px 0"><a href="#" onclick="event.preventDefault();mwViewAll(\'hp45\',\''+name+'\')" style="color:var(--wt);font-weight:500;text-decoration:none;border-bottom:1px dashed var(--wb)">+'+(d.hp45.length-4)+' more — view all &rarr;</a></div>';
     }
     html+='</div>';
 
@@ -4077,7 +4065,7 @@ function renderTeamOverview(){
         var pillStyle=(st.toLowerCase()==='on hold')?'background:#f5f5f4;color:#57534e':'background:#ccfbf1;color:#0f766e';
         html+='<div class="to-item"><div><div class="to-item-name" onclick="showDetail('+p.id+')">'+p.name+'</div><div class="to-item-meta">'+(p.pid||'--')+'</div></div><span class="to-pill" style="'+pillStyle+'">'+st+'</span></div>';
       });
-      if(d.pendingRebates.length>4)html+='<div style="font-size:11px;color:var(--text3);padding:4px 0">+'+(d.pendingRebates.length-4)+' more</div>';
+      if(d.pendingRebates.length>4)html+='<div style="font-size:11px;padding:4px 0"><a href="#" onclick="event.preventDefault();mwViewAll(\'rebate\',\''+name+'\')" style="color:#0f766e;font-weight:500;text-decoration:none;border-bottom:1px dashed #5eead4">+'+(d.pendingRebates.length-4)+' more — view all &rarr;</a></div>';
     }
     html+='</div>';
 
@@ -4088,7 +4076,7 @@ function renderTeamOverview(){
       d.missingHP.slice(0,4).forEach(function(p){
         html+='<div class="to-item"><div><div class="to-item-name" onclick="showDetail('+p.id+')">'+p.name+'</div><div class="to-item-meta">'+(p.pid||'--')+' · '+(p.type||'')+(p.subtype?' · '+p.subtype:'')+'</div></div><span class="to-pill" style="background:#f3e8ff;color:#7e22ce">No date</span></div>';
       });
-      if(d.missingHP.length>4)html+='<div style="font-size:11px;color:var(--text3);padding:4px 0">+'+(d.missingHP.length-4)+' more</div>';
+      if(d.missingHP.length>4)html+='<div style="font-size:11px;padding:4px 0"><a href="#" onclick="event.preventDefault();mwViewAll(\'hpmissing\',\''+name+'\')" style="color:var(--pt);font-weight:500;text-decoration:none;border-bottom:1px dashed var(--pb)">+'+(d.missingHP.length-4)+' more — view all &rarr;</a></div>';
     }
     html+='</div>';
 
@@ -4104,6 +4092,95 @@ updateMetrics=function(){
   if(_myWorkActive)renderMyWork();
   if(_teamOverviewActive)renderTeamOverview();
 };
+
+// ─── MY WORK "VIEW ALL" NAVIGATION ───────────────────────────────────────────
+function mwViewAll(section, assigneeName){
+  // Leave My Work dashboard
+  hideMyWork();
+
+  // Find and activate the correct main tab button
+  var tabMap={cor:'COR',rebate:'Rebate',hp45:'all',hpmissing:'all'};
+  var targetTab=tabMap[section]||'all';
+  var allTabBtns=document.querySelectorAll('#main-tabs .tab');
+  var targetBtn=null;
+  allTabBtns.forEach(function(btn){
+    btn.classList.remove('active');
+    var t=btn.getAttribute('onclick');
+    if(t&&t.indexOf("'"+targetTab+"'")>-1){targetBtn=btn;btn.classList.add('active');}
+  });
+
+  // Set the main tab state
+  mainTab=targetTab;subTab='all';currentPage=1;statusFilters=new Set();
+  document.getElementById('sub-tabs').classList.remove('visible');
+  document.querySelectorAll('#sub-tabs .tab').forEach(function(b){b.classList.remove('active');});
+  var firstSubTab=document.querySelector('#sub-tabs .tab');
+  if(firstSubTab)firstSubTab.classList.add('active');
+
+  // Clear all filter buttons then set the right one
+  var filterBtns=document.querySelectorAll('.filter-btn');
+  filterBtns.forEach(function(b){b.classList.remove('active');});
+
+  var nl=(assigneeName||'').toLowerCase();
+  if(section==='cor'){
+    // Corrections tab — filter to assignee
+    filterType='all';
+    filterBtns.forEach(function(b){
+      var oc=b.getAttribute('onclick')||'';
+      if(nl.includes('joy')&&oc.indexOf("'joy'")>-1){b.classList.add('active');filterType='joy';}
+      else if(nl.includes('althesa')&&oc.indexOf("'althesa'")>-1){b.classList.add('active');filterType='althesa';}
+      else if(nl.includes('rachel')&&oc.indexOf("'rachel'")>-1){b.classList.add('active');filterType='rachel';}
+    });
+    if(filterType==='all'){var firstFilter=document.querySelector('.filter-btn');if(firstFilter)firstFilter.classList.add('active');}
+  } else if(section==='rebate'){
+    // Rebate tab — filter to assignee
+    filterType='all';
+    filterBtns.forEach(function(b){
+      var oc=b.getAttribute('onclick')||'';
+      if(nl.includes('joy')&&oc.indexOf("'joy'")>-1){b.classList.add('active');filterType='joy';}
+      else if(nl.includes('althesa')&&oc.indexOf("'althesa'")>-1){b.classList.add('active');filterType='althesa';}
+      else if(nl.includes('rachel')&&oc.indexOf("'rachel'")>-1){b.classList.add('active');filterType='rachel';}
+    });
+    if(filterType==='all'){var firstFilter=document.querySelector('.filter-btn');if(firstFilter)firstFilter.classList.add('active');}
+  } else if(section==='hp45'){
+    // All Projects — filter to hp45 for assignee
+    filterType='hp45';
+    filterBtns.forEach(function(b){b.classList.remove('active');});
+    var firstFilter=document.querySelector('.filter-btn');if(firstFilter)firstFilter.classList.add('active');
+    // Also set assignee filter
+    filterBtns.forEach(function(b){
+      var oc=b.getAttribute('onclick')||'';
+      if(nl.includes('joy')&&oc.indexOf("'joy'")>-1){b.classList.add('active');filterType='joy';}
+      else if(nl.includes('althesa')&&oc.indexOf("'althesa'")>-1){b.classList.add('active');filterType='althesa';}
+      else if(nl.includes('rachel')&&oc.indexOf("'rachel'")>-1){b.classList.add('active');filterType='rachel';}
+    });
+    // Override: use hp45 filter with extra assignee handling in render
+    filterType='hp45';
+    // Scroll to table
+  } else if(section==='hpmissing'){
+    // Open the Reports modal on Missing HP tab
+    filterType='all';
+    var firstFilter=document.querySelector('.filter-btn');if(firstFilter)firstFilter.classList.add('active');
+    updateStatusDropdown();render();updateMetrics();
+    // Open report modal on hpmissing tab, pre-filtered to assignee
+    openReportCombined('hpmissing');
+    // Set the assignee dropdown
+    setTimeout(function(){
+      var sel=document.getElementById('hp-missing-assignee');
+      if(sel&&assigneeName){
+        var TEAM=['Joy','Althesa','Rachel'];
+        var match=TEAM.find(function(t){return nl.includes(t.toLowerCase());});
+        if(match)sel.value=match;
+      }
+      renderHPMissingReport();
+    },100);
+    return;
+  }
+
+  updateStatusDropdown();render();updateMetrics();
+  // Scroll to top of table
+  var tableWrap=document.querySelector('.table-wrap');
+  if(tableWrap)tableWrap.scrollIntoView({behavior:'smooth',block:'start'});
+}
 
 load();updateStatusDropdown();render();applyEditMode();
 
