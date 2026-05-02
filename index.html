@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Utility Ops Tracker</title>
+<title>Utility Department Tracker</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -79,19 +79,23 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg3);
 .subtab-bar{display:none}.subtab-bar.visible{display:flex}
 
 /* ── METRICS ── */
-.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:10px;margin-bottom:18px}
-.metric{background:var(--bg);border-radius:var(--rl);border:1px solid var(--border2);padding:18px 20px;transition:border-color .15s,background .15s}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px;flex-shrink:0}
+.metric{
+  background:var(--bg);border-radius:var(--rl);
+  border:1px solid var(--border2);padding:16px 18px;
+  transition:border-color .12s,background .12s;
+}
 .metric-btn{cursor:pointer}
-.metric-btn:hover{border-color:var(--border2);background:var(--bg2)}
+.metric-btn:hover{background:var(--bg2)}
 .metric-btn.active{border-color:var(--accent);background:var(--accent);color:var(--accent-fg)}
-.metric-btn.active .metric-label{color:rgba(255,255,255,.55)}
+.metric-btn.active .metric-label{color:rgba(255,255,255,.6)}
 .metric-btn.active .metric-value{color:#fff}
-.metric-hint{font-size:11px;color:var(--text3);margin-top:5px;letter-spacing:.02em}
-.metric-btn.active .metric-hint{color:rgba(255,255,255,.45)}
-.metric-label{font-size:11px;font-weight:600;color:var(--text3);margin-bottom:8px;text-transform:uppercase;letter-spacing:.07em}
-.metric-value{font-size:34px;font-weight:600;color:var(--text);line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.metric-hint{font-size:10.5px;color:var(--text3);margin-top:4px;letter-spacing:.01em}
+.metric-btn.active .metric-hint{color:rgba(255,255,255,.5)}
+.metric-label{font-size:10px;font-weight:700;color:var(--text3);margin-bottom:7px;text-transform:uppercase;letter-spacing:.08em}
+.metric-value{font-size:32px;font-weight:700;color:var(--text);line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-.03em}
 .mv-d{color:var(--dt)}.mv-w{color:var(--wt)}.mv-s{color:var(--st)}.mv-p{color:var(--pt)}.mv-i{color:var(--it)}
-.qf-btn{font-size:13px;padding:5px 14px;border-radius:20px;border:1px solid var(--border2);background:var(--bg);color:var(--text2);cursor:pointer;font-weight:500;transition:background .12s}
+.qf-btn{font-size:12.5px;padding:5px 14px;border-radius:20px;border:1px solid var(--border2);background:var(--bg);color:var(--text2);cursor:pointer;font-weight:500;transition:background .12s,color .12s}
 .qf-btn:hover{background:var(--bg2);color:var(--text)}
 .qf-btn.active{background:var(--accent);color:var(--accent-fg);border-color:var(--accent);font-weight:600}
 
@@ -103,30 +107,62 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg3);
 .alert-bar.w{background:var(--wbg);color:var(--wt);border-color:var(--wb)}
 
 /* ── CONTROLS ── */
-.controls{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
-.filter-btn{font-size:13px;padding:6px 15px;border-radius:20px;border:1px solid var(--border2);background:var(--bg);color:var(--text2);cursor:pointer;transition:all .12s;font-family:inherit;letter-spacing:-.01em}
-.filter-btn:hover{border-color:var(--border2);background:var(--bg2);color:var(--text)}
-.filter-btn.active{background:var(--accent);color:var(--accent-fg);border-color:var(--accent);font-weight:500}
-.search-wrap input{width:100%;font-size:14px;padding:8px 16px;border-radius:20px;border:1px solid var(--border2);background:var(--bg);color:var(--text);outline:none;font-family:inherit;letter-spacing:-.01em}
+.controls{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px;align-items:center}
+.filter-btn{
+  font-size:12.5px;padding:6px 14px;border-radius:20px;
+  border:1px solid var(--border2);background:var(--bg);
+  color:var(--text2);cursor:pointer;
+  transition:background .12s,color .12s,border-color .12s;
+  font-family:inherit;font-weight:500;
+}
+.filter-btn:hover{background:var(--bg2);color:var(--text)}
+.filter-btn.active{background:var(--accent);color:var(--accent-fg);border-color:var(--accent);font-weight:600}
+.search-wrap input{
+  width:100%;font-size:13px;padding:7px 16px;
+  border-radius:20px;border:1px solid var(--border2);
+  background:var(--bg);color:var(--text);
+  outline:none;font-family:inherit;
+  transition:border-color .12s;
+}
 .search-wrap input:focus{border-color:var(--accent)}
-.ctrl-select{font-size:13px;padding:7px 10px;border-radius:var(--r);border:1px solid var(--border2);background:var(--bg);color:var(--text2);outline:none;font-family:inherit;cursor:pointer}
+.ctrl-select{
+  font-size:12.5px;padding:6px 10px;border-radius:var(--r);
+  border:1px solid var(--border2);background:var(--bg);
+  color:var(--text2);outline:none;font-family:inherit;cursor:pointer;
+  transition:border-color .12s;
+}
 .ctrl-select:hover{border-color:var(--border2)}
-.export-row{display:flex;gap:7px;justify-content:flex-end;align-items:center;margin-bottom:8px}
-.export-btn{font-size:13px;padding:5px 13px;border-radius:var(--r);border:1px solid var(--border2);background:var(--bg);color:var(--text2);cursor:pointer;font-family:inherit}
-.export-btn:hover{background:var(--bg2);color:var(--text);border-color:var(--border2)}
+.export-row{display:flex;gap:6px;justify-content:flex-end;align-items:center;margin-bottom:8px}
+.export-btn{
+  font-size:12.5px;padding:5px 13px;border-radius:var(--r);
+  border:1px solid var(--border2);background:var(--bg);
+  color:var(--text2);cursor:pointer;font-family:inherit;font-weight:500;
+  transition:background .12s,color .12s;
+}
+.export-btn:hover{background:var(--bg2);color:var(--text)}
 
 /* ── TABLE ── */
 .table-wrap{background:var(--bg);border:1px solid var(--border2);border-radius:var(--rl);overflow:hidden}
 table{width:100%;border-collapse:collapse}
-th{font-size:11px;font-weight:600;color:var(--text3);text-align:left;padding:11px 16px;border-bottom:1px solid var(--border);background:var(--bg2);text-transform:uppercase;letter-spacing:.07em;white-space:nowrap}
-td{font-size:14px;color:var(--text);padding:12px 16px;border-bottom:1px solid var(--border);vertical-align:middle}
+th{
+  font-size:10.5px;font-weight:700;color:var(--text3);
+  text-align:left;padding:10px 14px;
+  border-bottom:1px solid var(--border2);
+  background:var(--bg2);
+  text-transform:uppercase;letter-spacing:.08em;white-space:nowrap;
+}
+td{
+  font-size:13px;color:var(--text);
+  padding:11px 14px;border-bottom:1px solid var(--border);
+  vertical-align:middle;
+}
 tr:last-child td{border-bottom:none}
 tr.dr:hover td{background:var(--bg2);cursor:pointer}
 tr.dr.flagged-row td{background:#fffdf0}
 @media(prefers-color-scheme:dark){tr.dr.flagged-row td{background:#2a2008}}
 
 /* ── BADGES ── */
-.badge{display:inline-block;font-size:12px;font-weight:500;padding:3px 10px;border-radius:20px;white-space:nowrap;letter-spacing:-.01em}
+.badge{display:inline-block;font-size:11.5px;font-weight:600;padding:2px 9px;border-radius:20px;white-space:nowrap;letter-spacing:.01em}
 .b-IC{background:#dcfce7;color:#14532d}
 .b-COC{background:#f3e8ff;color:#6b21a8}
 .b-Rebate{background:#d1fae5;color:#065f46}
@@ -143,7 +179,7 @@ tr.dr.flagged-row td{background:#fffdf0}
   .b-Regular{background:#0f1f3d;color:#bfdbfe}
   .b-COR{background:#2d0a0a;color:#fca5a5}
 }
-.sbadge{display:inline-block;font-size:12px;padding:3px 10px;border-radius:20px;white-space:nowrap;letter-spacing:-.01em}
+.sbadge{display:inline-block;font-size:11.5px;font-weight:500;padding:2px 9px;border-radius:20px;white-space:nowrap;letter-spacing:.01em}
 .s-green{background:#dcfce7;color:#166534}
 .s-blue{background:#dbeafe;color:#1d4ed8}
 .s-red{background:#fee2e2;color:#991b1b}
@@ -160,43 +196,49 @@ tr.dr.flagged-row td{background:#fffdf0}
   .s-purple{background:#2e1065;color:#d8b4fe}
   .s-amber{background:#2d1508;color:#fcd34d}
 }
-.avatar{width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;background:var(--bg3);color:var(--text2);flex-shrink:0;border:1px solid var(--border2)}
-.days-pill{display:inline-block;font-size:13px;font-weight:500;padding:3px 11px;border-radius:20px;background:var(--ibg);color:var(--it);font-family:'DM Mono',monospace}
+.avatar{width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;background:var(--bg3);color:var(--text2);flex-shrink:0;border:1px solid var(--border2)}
+.days-pill{display:inline-block;font-size:12.5px;font-weight:600;padding:2px 10px;border-radius:20px;background:var(--ibg);color:var(--it);font-family:'DM Mono',monospace}
 .days-pill.long{background:var(--dbg);color:var(--dt)}
 .days-pill.med{background:var(--wbg);color:var(--wt)}
-.cor-flag{display:inline-flex;align-items:center;gap:4px;font-size:12px;background:var(--dbg);color:var(--dt);padding:3px 10px;border-radius:20px;font-weight:500}
+.cor-flag{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;background:var(--dbg);color:var(--dt);padding:2px 9px;border-radius:20px;font-weight:600}
 .action-row{display:flex;gap:4px}
-.act-btn{font-size:12px;padding:4px 11px;border-radius:20px;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;white-space:nowrap;font-family:inherit;transition:all .1s}
-.act-btn:hover{background:var(--bg2);color:var(--text);border-color:var(--border2)}
+.act-btn{
+  font-size:11.5px;padding:4px 10px;border-radius:20px;
+  border:1px solid var(--border2);background:transparent;
+  color:var(--text2);cursor:pointer;white-space:nowrap;
+  font-family:inherit;font-weight:500;
+  transition:background .1s,color .1s,border-color .1s;
+}
+.act-btn:hover{background:var(--bg2);color:var(--text)}
 .act-btn.del:hover{background:var(--dbg);color:var(--dt);border-color:var(--db)}
-.empty{text-align:center;padding:3.5rem;color:var(--text3);font-size:14px}
-.pagination{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-top:1px solid var(--border);background:var(--bg2);font-size:13px;color:var(--text3);flex-wrap:wrap;gap:8px}
+.empty{text-align:center;padding:3rem 2rem;color:var(--text3);font-size:13px;border:1px dashed var(--border2);border-radius:var(--rl);background:var(--bg2)}
+.pagination{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-top:1px solid var(--border);background:var(--bg2);font-size:12.5px;color:var(--text3);flex-wrap:wrap;gap:8px}
 .pg-btns{display:flex;gap:4px;flex-wrap:wrap}
-.pg-btn{font-size:12px;padding:4px 11px;border-radius:var(--r);border:1px solid var(--border2);background:var(--bg);color:var(--text2);cursor:pointer;font-family:inherit;transition:all .1s}
-.pg-btn:hover{background:var(--bg2);border-color:var(--border2)}
-.pg-btn.active{background:var(--accent);color:var(--accent-fg);border-color:var(--accent);font-weight:500}
+.pg-btn{font-size:12px;padding:4px 10px;border-radius:var(--r);border:1px solid var(--border2);background:var(--bg);color:var(--text2);cursor:pointer;font-family:inherit;transition:background .1s,color .1s;font-weight:500}
+.pg-btn:hover{background:var(--bg2)}
+.pg-btn.active{background:var(--accent);color:var(--accent-fg);border-color:var(--accent);font-weight:600}
 .pg-btn:disabled{opacity:.4;cursor:not-allowed}
 
 /* ── MODALS ── */
-.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;z-index:200;padding:1rem}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;z-index:200;padding:1rem;backdrop-filter:blur(2px)}
 .modal{background:var(--bg);border-radius:var(--rl);border:1px solid var(--border2);padding:1.75rem;width:100%;max-width:580px;max-height:92vh;overflow-y:auto}
 .modal-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.4rem}
-.modal-hdr h2{font-size:14px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text2)}
-.close-btn{background:none;border:none;font-size:18px;color:var(--text3);cursor:pointer;padding:0 4px;line-height:1}
-.close-btn:hover{color:var(--text)}
-.fr{margin-bottom:13px}
-.fr label{display:block;font-size:11px;color:var(--text3);margin-bottom:5px;font-weight:600;text-transform:uppercase;letter-spacing:.06em}
-.fr input,.fr select,.fr textarea{width:100%;font-size:14px;padding:9px 12px;border-radius:var(--r);border:1px solid var(--border2);background:var(--bg);color:var(--text);outline:none;font-family:inherit;transition:border-color .12s}
-.fr input:focus,.fr select:focus,.fr textarea:focus{border-color:var(--accent)}
+.modal-hdr h2{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text2)}
+.close-btn{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);font-size:16px;color:var(--text3);cursor:pointer;padding:0;width:28px;height:28px;display:flex;align-items:center;justify-content:center;line-height:1;transition:background .12s,color .12s}
+.close-btn:hover{background:var(--bg3);color:var(--text)}
+.fr{margin-bottom:12px}
+.fr label{display:block;font-size:10px;color:var(--text3);margin-bottom:4px;font-weight:700;text-transform:uppercase;letter-spacing:.08em}
+.fr input,.fr select,.fr textarea{width:100%;font-size:13.5px;padding:8px 12px;border-radius:var(--r);border:1px solid var(--border2);background:var(--bg2);color:var(--text);outline:none;font-family:inherit;transition:border-color .12s,background .12s}
+.fr input:focus,.fr select:focus,.fr textarea:focus{border-color:var(--accent);background:var(--bg)}
 .fr textarea{height:70px;resize:vertical}
 .fg{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.sec-lbl{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;padding:14px 0 7px;border-top:1px solid var(--border);margin-top:6px}
-.info-box{background:var(--ibg);color:var(--it);border-radius:var(--r);padding:9px 13px;font-size:12px;margin-bottom:10px;border:1px solid var(--ib)}
+.sec-lbl{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;padding:14px 0 7px;border-top:1px solid var(--border);margin-top:6px}
+.info-box{background:var(--ibg);color:var(--it);border-radius:var(--r);padding:8px 12px;font-size:12px;margin-bottom:10px;border:1px solid var(--ib)}
 .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:1.4rem;padding-top:1.1rem;border-top:1px solid var(--border)}
-.btn-c{font-size:14px;padding:8px 18px;border-radius:var(--r);border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;font-family:inherit}
+.btn-c{font-size:13px;padding:7px 16px;border-radius:var(--r);border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;font-family:inherit;font-weight:500;transition:background .12s}
 .btn-c:hover{background:var(--bg2)}
-.btn-s{font-size:14px;font-weight:500;padding:8px 20px;border-radius:var(--r);border:none;background:var(--accent);color:var(--accent-fg);cursor:pointer;font-family:inherit;letter-spacing:-.01em}
-.btn-s:hover{opacity:.85}
+.btn-s{font-size:13px;font-weight:600;padding:7px 18px;border-radius:var(--r);border:none;background:var(--accent);color:var(--accent-fg);cursor:pointer;font-family:inherit;transition:opacity .12s}
+.btn-s:hover{opacity:.88}
 
 /* ── DETAIL PANEL ── */
 .detail-bg{position:fixed;inset:0;background:rgba(0,0,0,.2);display:flex;align-items:stretch;justify-content:flex-end;z-index:150}
@@ -257,117 +299,205 @@ tr.dr.flagged-row td{background:#fffdf0}
 .name-prompt-modal p{font-size:14px;color:var(--text2);margin-bottom:1.4rem}
 .name-prompt-modal input{width:100%;font-size:16px;padding:10px 13px;border-radius:var(--r);border:1px solid var(--border2);background:var(--bg);color:var(--text);outline:none;margin-bottom:12px;text-align:center;font-family:inherit}
 .name-prompt-modal input:focus{border-color:var(--accent)}
-.pin-modal{background:var(--bg);border-radius:var(--rl);border:1px solid var(--border2);padding:1.75rem;width:100%;max-width:320px}
+.pin-modal{background:var(--bg);border-radius:16px;border:1px solid var(--border2);padding:2rem;width:100%;max-width:340px;box-shadow:0 8px 32px rgba(0,0,0,.12)}
 
-/* ── MISC ── */
+.tab-group{display:none!important}
+.topbar{display:none!important}
+.app-body{padding:0!important}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px}
 @media(max-width:700px){.metrics{grid-template-columns:repeat(3,1fr)}.fg{grid-template-columns:1fr}th,td{padding:8px 10px}.report-grid{grid-template-columns:1fr}}
 @media print{.topbar button,.controls,.export-row,.tab-group,.pagination{display:none!important}.app{padding:0}.table-wrap{box-shadow:none}}
+
+/* ── SFA/REGULAR SUBTABS (Option B) ── */
+.stab{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:8px 16px;border-radius:8px;
+  font-size:13px;font-weight:500;cursor:pointer;
+  border:1px solid var(--border2);
+  background:var(--bg);color:var(--text2);
+  font-family:inherit;transition:background .12s,color .12s,border-color .12s;
+}
+.stab-cnt{
+  font-size:10px;font-family:'DM Mono',monospace;font-weight:600;
+  padding:2px 7px;border-radius:20px;
+  background:var(--bg3);color:var(--text3);
+}
+.stab-all.active{background:rgba(91,77,214,.08);color:#5B4DD6;border-color:rgba(91,77,214,.2);font-weight:600}
+.stab-all.active .stab-cnt{background:rgba(91,77,214,.12);color:#5B4DD6}
+.stab-sfa.active{background:#faf5ff;color:#7e22ce;border-color:rgba(126,34,206,.25);font-weight:600}
+.stab-sfa.active .stab-cnt{background:rgba(126,34,206,.12);color:#7e22ce}
+.stab-reg.active{background:#eff6ff;color:#1d4ed8;border-color:rgba(29,78,216,.25);font-weight:600}
+.stab-reg.active .stab-cnt{background:rgba(29,78,216,.12);color:#1d4ed8}
+
+/* ── SIDEBAR LAYOUT ── */
+body{overflow:hidden}
+.app{max-width:none;margin:0;padding:0;display:grid;grid-template-columns:260px 1fr;height:100vh;overflow:hidden}
+.sidebar{
+  background:var(--bg);border-right:1px solid var(--border2);
+  display:flex;flex-direction:column;height:100vh;overflow:hidden;flex-shrink:0;
+}
+.sb-brand{
+  padding:18px 18px 16px;border-bottom:1px solid var(--border2);
+}
+.sb-brand-name{
+  font-size:15px;font-weight:700;color:var(--text);
+  letter-spacing:-.02em;line-height:1.3;
+}
+.sb-brand-sub{
+  font-size:11px;color:var(--text3);margin-top:3px;
+  letter-spacing:.04em;font-weight:500;text-transform:uppercase;
+}
+.sb-body{flex:1;overflow-y:auto;padding:12px 10px}
+.sb-section{
+  padding:8px 10px 4px;font-size:10px;font-weight:500;
+  color:var(--text3);text-transform:uppercase;letter-spacing:.09em;
+}
+.sb-nav-item{
+  display:flex;align-items:center;gap:11px;
+  padding:10px 12px;margin:3px 0;border-radius:9px;
+  cursor:pointer;font-size:14px;font-weight:600;color:var(--text2);
+  border:1px solid transparent;
+  transition:background .12s,color .12s,border-color .12s;
+  font-family:inherit;background:transparent;
+  width:100%;text-align:left;
+}
+.sb-nav-item:hover{background:var(--bg2);color:var(--text)}
+.sb-nav-item.active{
+  background:rgba(91,77,214,0.09);color:#5B4DD6;
+  font-weight:700;border-color:rgba(91,77,214,0.15);
+}
+.sb-nav-item.active .sb-nav-badge{background:rgba(91,77,214,0.15);color:#5B4DD6}
+.sb-nav-item.sub{padding-left:26px;font-size:13.5px;font-weight:500}
+.sb-nav-item.sub.active{background:rgba(91,77,214,0.07);color:#5B4DD6;font-weight:700;border-color:rgba(91,77,214,0.12)}
+.sb-nav-icon{font-size:15px;width:20px;text-align:center;flex-shrink:0}
+.sb-nav-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.sb-nav-badge{
+  margin-left:auto;font-size:11px;font-weight:700;
+  padding:2px 8px;border-radius:20px;
+  background:var(--bg3);color:var(--text2);
+  min-width:26px;text-align:center;
+}
+.sb-nav-badge.cor{background:var(--dbg);color:var(--dt)}
+.sb-nav-item.active .sb-nav-badge{background:rgba(91,77,214,0.15);color:#5B4DD6}
+.sb-divider{height:1px;background:var(--border);margin:8px 4px}
+.sb-footer{border-top:1px solid var(--border2);padding:10px 8px}
+.sb-viewer-box{
+  display:flex;align-items:center;gap:8px;
+  padding:9px 10px;border-radius:var(--r);
+  border:1px solid var(--border2);background:var(--bg2);
+  cursor:pointer;margin-bottom:6px;
+  transition:background .12s,border-color .12s;
+}
+.sb-viewer-box:hover{background:var(--bg3);border-color:var(--border2)}
+.sb-viewer-dot{width:7px;height:7px;border-radius:50%;background:#16a34a;flex-shrink:0}
+.sb-viewer-label{font-size:12px;font-weight:600;color:var(--text);flex:1}
+.sb-viewer-sub{font-size:10px;color:var(--text3);margin-top:1px}
+
+/* ── MAIN CONTENT ── */
+.main-content{flex:1;display:flex;flex-direction:column;height:100vh;overflow:hidden}
+.main-topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 24px;background:var(--bg);
+  border-bottom:1px solid var(--border2);
+  min-height:54px;flex-shrink:0;gap:12px;
+}
+.main-title-text{font-size:15px;font-weight:700;color:var(--text);letter-spacing:-.02em}
+.main-topbar-actions{display:flex;align-items:center;gap:8px}
+.main-scroll{flex:1;overflow-y:auto;padding:16px 24px 4rem}
+#rebate-banner{margin-bottom:12px}
+#rebate-banner:empty{display:none!important;margin:0}
 </style>
 </head>
 <body>
 
 <div class="app">
-<div class="topbar">
-  <div class="title-block">
-    <div class="title-logo">
-      <svg width="26" height="30" viewBox="0 0 14 18" fill="white"><path d="M8 0L0 10h6l-2 8L14 8H8z"/></svg>
-    </div>
-    <div>
-      <h1>Utility Ops Tracker</h1>
-      <p>IC &middot; COC &middot; Rebate &middot; By Veronica Serna</p>
-    </div>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="sb-brand">
+    <div class="sb-brand-name">Utility Department Tracker</div>
+    <div class="sb-brand-sub">IC &middot; COC &middot; Rebate</div>
   </div>
-  <div class="top-actions">
-    <div id="save-status-bar" style="display:none;align-items:center;gap:6px;font-size:12px;font-weight:500;padding:5px 12px;border-radius:var(--r);border:1px solid;white-space:nowrap"></div>
-    <button id="viewer-btn" class="viewer-btn" onclick="onViewerClick()">
-      <span class="viewer-dot"></span>
-      <span id="viewer-count">1</span>
-      <span style="font-size:11px;color:var(--text3)">viewing</span>
+  <div class="sb-body">
+    <div class="sb-section">Projects</div>
+    <button class="sb-nav-item active" id="sb-all" onclick="sidebarNav('all',this)">
+      <span class="sb-nav-icon">⊞</span> All Projects
+      <span class="sb-nav-badge" id="sb-count-all">0</span>
     </button>
-    <button class="add-btn rep2" onclick="openReportCombined()">Reports</button>
-    <button class="add-btn sec edit-only" onclick="openCorModal()">Log Correction</button>
-    <button class="add-btn primary edit-only" onclick="openAddModal()">+ Add Project</button>
+    <button class="sb-nav-item sub" id="sb-IC" onclick="sidebarNav('IC',this)">
+      <span class="sb-nav-icon">⚡</span> Interconnection
+      <span class="sb-nav-badge" id="sb-count-IC">0</span>
+    </button>
+    <button class="sb-nav-item sub" id="sb-COC" onclick="sidebarNav('COC',this)">
+      <span class="sb-nav-icon">📋</span> COC
+      <span class="sb-nav-badge" id="sb-count-COC">0</span>
+    </button>
+    <button class="sb-nav-item sub" id="sb-Rebate" onclick="sidebarNav('Rebate',this)">
+      <span class="sb-nav-icon">💰</span> Rebate
+      <span class="sb-nav-badge" id="sb-count-Rebate">0</span>
+    </button>
+    <button class="sb-nav-item sub" id="sb-COR" onclick="sidebarNav('COR',this)">
+      <span class="sb-nav-icon">⚠️</span> Corrections
+      <span class="sb-nav-badge cor" id="sb-cor-badge" style="display:none">0</span>
+    </button>
+    <div class="sb-divider"></div>
+    <div class="sb-section">Tools</div>
+    <button class="sb-nav-item" onclick="openReportCombined()">
+      <span class="sb-nav-icon">📊</span> Reports
+    </button>
+    <button class="sb-nav-item edit-only" onclick="openAddModal()">
+      <span class="sb-nav-icon">＋</span> Add Project
+    </button>
+    <button class="sb-nav-item edit-only" onclick="openCorModal()">
+      <span class="sb-nav-icon">📝</span> Log Correction
+    </button>
   </div>
-</div>
-<div class="app-body">
-
-<!-- Name Prompt Modal -->
-<div class="modal-bg" id="name-prompt-modal" style="display:flex">
-<div class="name-prompt-modal">
-  <h2>Welcome to Utility Ops Tracker</h2>
-  <p>Enter your full name to continue.</p>
-  <input type="text" id="viewer-name-input" placeholder="Full name..." maxlength="60" autocomplete="name" oninput="checkTeamName(this.value)" onkeydown="if(event.key==='Enter')submitViewerName()">
-  <div id="team-pw-section" style="display:none">
-    <div style="font-size:12px;color:var(--it);margin-bottom:6px;text-align:center">&#128075; Welcome! Enter the team password to enable editing.</div>
-    <input type="password" id="team-password-input" placeholder="Team password" maxlength="40" style="width:100%;font-size:14px;padding:9px 12px;border-radius:var(--r);border:0.5px solid var(--border2);background:var(--bg);color:var(--text);outline:none;text-align:center;box-sizing:border-box;margin-bottom:12px" onkeydown="if(event.key==='Enter')submitViewerName()">
-  </div>
-  <div id="name-prompt-error" style="font-size:12px;color:var(--dt);margin-bottom:8px;display:none">Please enter your full name.</div>
-  <button class="btn-s" style="width:100%;font-size:14px" onclick="submitViewerName()">Continue</button>
-  <div style="font-size:11px;color:var(--text3);margin-top:10px">View only mode if no team password entered</div>
-</div>
-</div>
-</div>
-
-<!-- PIN Modal -->
-<div class="modal-bg" id="pin-modal" style="display:none" onclick="if(event.target.id==='pin-modal')closePinModal()">
-<div class="pin-modal">
-  <div class="modal-hdr"><h2>Owner access</h2><button class="close-btn" onclick="closePinModal()">&#x2715;</button></div>
-  <div class="fr"><label>Enter PIN</label><input type="password" id="pin-input" maxlength="10" placeholder="PIN..." onkeydown="if(event.key==='Enter')checkPin()"></div>
-  <div id="pin-error" style="font-size:12px;color:var(--dt);margin-bottom:10px;display:none">Incorrect PIN. Try again.</div>
-  <div class="modal-actions"><button class="btn-c" onclick="closePinModal()">Cancel</button><button class="btn-s" onclick="checkPin()">Unlock</button></div>
-</div>
-</div>
-
-<!-- Viewer List Modal -->
-<div class="modal-bg" id="viewer-list-modal" style="display:none" onclick="if(event.target.id==='viewer-list-modal')closeViewerList()">
-<div class="viewer-list-modal">
-  <div class="modal-hdr"><h2>Currently viewing</h2><button class="close-btn" onclick="closeViewerList()">&#x2715;</button></div>
-  <div id="viewer-list-content"></div>
-</div>
-</div>
-
-<div class="tab-group">
-  <div class="tab-row" id="main-tabs" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-    <div style="display:flex;align-items:center;flex:1">
-      <button class="tab active" onclick="setMainTab('all',this)">All Projects</button>
-      <button class="tab" onclick="setMainTab('IC',this)">Interconnection</button>
-      <button class="tab" onclick="setMainTab('COC',this)">COC</button>
-      <button class="tab" onclick="setMainTab('Rebate',this)">Rebate</button>
-      <button class="tab" onclick="setMainTab('COR',this)">Corrections</button>
+  <div class="sb-footer">
+    <div class="sb-viewer-box" onclick="onViewerClick()" id="sb-viewer-box">
+      <span class="sb-viewer-dot" id="sb-viewer-dot"></span>
+      <div>
+        <div class="sb-viewer-label"><span id="sb-viewer-count">1</span> viewing</div>
+        <div class="sb-viewer-sub" id="sb-viewer-sub">click to see who</div>
+      </div>
     </div>
-    <input type="text" id="search-inp" placeholder="Search name, ComEd ID, UB name..." oninput="setSearch(this.value)" style="font-size:13px;padding:7px 16px;border-radius:20px;border:1px solid var(--border2);background:var(--bg);color:var(--text);outline:none;width:260px;margin-bottom:4px;font-family:inherit">
-  </div>
-  <div class="tab-row sub subtab-bar" id="sub-tabs">
-    <button class="tab active" onclick="setSubTab('all',this)">All</button>
-    <button class="tab" onclick="setSubTab('SFA',this)">SFA</button>
-    <button class="tab" onclick="setSubTab('Regular',this)">Regular</button>
+    <div id="save-status-bar" style="display:none;align-items:center;gap:6px;font-size:12px;font-weight:500;padding:6px 10px;border-radius:var(--r);border:1px solid;white-space:nowrap"></div>
   </div>
 </div>
+
+<!-- MAIN CONTENT -->
+<div class="main-content">
+  <div class="main-topbar">
+    <div class="main-title-text" id="main-page-title">All Projects</div>
+    <div class="main-topbar-actions">
+      <input type="text" id="search-inp" placeholder="Search name, ComEd ID, UB name..." oninput="setSearch(this.value)" style="font-size:12px;padding:6px 14px;border-radius:20px;border:1px solid var(--border2);background:var(--bg2);color:var(--text);outline:none;width:240px;font-family:inherit">
+    </div>
+  </div>
+
+  <div class="main-scroll">
 
 <div id="rebate-banner" style="display:none"></div>
 
-<div class="metrics">
-  <div class="metric metric-btn" onclick="clickMetric('all')" title="Show all projects">
-    <div class="metric-label">Showing</div>
+<div class="metrics" style="margin-bottom:14px">
+  <div class="metric metric-btn" id="mc-total" onclick="clickMetric('all')" title="Show all projects">
+    <div class="metric-label" id="mc-total-label">Showing</div>
     <div class="metric-value" id="m-total">0</div>
   </div>
-
-  <div class="metric metric-btn" onclick="clickMetric('pending')" title="Overall pending — click to see breakdown">
-    <div class="metric-label">Overall Pending</div>
+  <div class="metric metric-btn" id="mc-pending" onclick="clickMetric('pending')" title="Overall pending">
+    <div class="metric-label" id="mc-pending-label">Overall Pending</div>
     <div class="metric-value mv-i" id="m-pending-all">0</div>
     <div class="metric-hint">click to filter</div>
   </div>
-  <div class="metric metric-btn" onclick="clickMetric('nys')" title="Not Yet Submitted — click for breakdown">
+  <div class="metric metric-btn" id="mc-nys" onclick="clickMetric('nys')" title="Not Yet Submitted">
     <div class="metric-label">Not Yet Submitted</div>
     <div class="metric-value mv-w" id="m-nys">0</div>
     <div class="metric-hint">click to filter</div>
   </div>
-  <div class="metric metric-btn" onclick="clickMetric('opencor')" title="All open corrections">
-    <div class="metric-label">Open Corrections <span style="font-size:9px;color:var(--text3)">all</span></div>
+  <div class="metric metric-btn" id="mc-cor" onclick="clickMetric('opencor')" title="All open corrections">
+    <div class="metric-label">Open Corrections</div>
     <div class="metric-value mv-p" id="m-cor">0</div>
     <div class="metric-hint">click to filter</div>
   </div>
-  <div class="metric metric-btn" onclick="clickMetric('hp45')" title="Projects enrolled to Hourly Pricing for 45+ days — need follow-up">
+  <div class="metric metric-btn" id="mc-hp45" onclick="clickMetric('hp45')" title="HP 45+ days follow-up">
     <div class="metric-label">HP 45+ Days <span style="font-size:9px;color:var(--text3)">follow-up</span></div>
     <div class="metric-value mv-d" id="m-hp45">0</div>
     <div class="metric-hint">click to filter</div>
@@ -376,7 +506,6 @@ tr.dr.flagged-row td{background:#fffdf0}
 
 <div id="alerts"></div>
 
-<!-- Quick filter rows — shown only when relevant card is clicked -->
 <div id="qf-pending-row" style="display:none;gap:6px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
   <span style="font-size:11px;color:var(--text2);font-weight:500;text-transform:uppercase;letter-spacing:.04em">Overall Pending:</span>
   <button id="qfb-pend-ic" onclick="clickMetric('pending-ic')" class="qf-btn">IC &nbsp;<span id="qf-pend-ic" style="font-weight:600">0</span></button>
@@ -389,6 +518,27 @@ tr.dr.flagged-row td{background:#fffdf0}
   <button id="qfb-nys-ic" onclick="clickMetric('nys-ic')" class="qf-btn">IC &nbsp;<span id="qf-nys-ic" style="font-weight:600">0</span></button>
   <button id="qfb-nys-coc" onclick="clickMetric('nys-coc')" class="qf-btn">COC &nbsp;<span id="qf-nys-coc" style="font-weight:600">0</span></button>
   <button id="qfb-nys-rebate" onclick="clickMetric('nys-rebate')" class="qf-btn">Rebate &nbsp;<span id="qf-nys-rebate" style="font-weight:600">0</span></button>
+</div>
+
+<!-- Sub-type pill tabs -->
+<div id="sub-tabs-wrapper" style="display:none;margin-bottom:10px">
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <button id="subtab-all" onclick="setSubTab('all',this)" class="stab stab-all active">
+      <span>◈</span> All <span id="subtab-count-all" class="stab-cnt">0</span>
+    </button>
+    <button id="subtab-SFA" onclick="setSubTab('SFA',this)" class="stab stab-sfa">
+      <span>⚡</span> SFA <span id="subtab-count-SFA" class="stab-cnt">0</span>
+    </button>
+    <button id="subtab-Regular" onclick="setSubTab('Regular',this)" class="stab stab-reg">
+      <span>◻</span> Regular <span id="subtab-count-Regular" class="stab-cnt">0</span>
+    </button>
+  </div>
+</div>
+<!-- legacy sub-tabs used by existing JS -->
+<div class="tab-row sub subtab-bar" id="sub-tabs" style="display:none">
+  <button class="tab active" onclick="setSubTab('all',this)">All</button>
+  <button class="tab" onclick="setSubTab('SFA',this)">SFA</button>
+  <button class="tab" onclick="setSubTab('Regular',this)">Regular</button>
 </div>
 
 <div class="controls" id="main-controls">
@@ -432,7 +582,7 @@ tr.dr.flagged-row td{background:#fffdf0}
 </div>
 
 <div class="export-row">
-  <span id="result-count" style="font-size:12px;font-weight:600;color:var(--text2)"></span>
+  <span id="result-count" style="font-size:13px;font-weight:700;color:var(--text)"></span>
   <button class="export-btn" onclick="exportXLSX()">Export XLSX</button>
 </div>
 
@@ -1269,6 +1419,7 @@ const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov',
 
 let projects=[],corrections=[],nextId=9000,nextCorId=9500,_lastCorList=[];
 let mainTab='all',subTab='all',filterType='all',searchQ='',sortBy='cor_first';
+let pendingOnly=false;
 let statusFilters=new Set();
 let currentPage=1,pageSize=50,editId=null,detailId=null;
 
@@ -1734,16 +1885,48 @@ function setMainTab(t,btn,silent){
 mainTab=t;subTab='all';currentPage=1;statusFilters=new Set();
 document.querySelectorAll('#main-tabs .tab').forEach(b=>b.classList.remove('active'));
 if(btn)btn.classList.add('active');
-document.getElementById('sub-tabs').classList.toggle('visible',t==='IC'||t==='COC');
+const showSub=t==='IC'||t==='COC'||t==='Rebate';
+document.getElementById('sub-tabs').classList.toggle('visible',showSub);
+const wrapper=document.getElementById('sub-tabs-wrapper');
+if(wrapper){wrapper.style.display=showSub?'block':'none';if(showSub)setTimeout(updateSubTabCounts,50);}
 document.querySelectorAll('#sub-tabs .tab').forEach(b=>b.classList.remove('active'));
 document.querySelector('#sub-tabs .tab').classList.add('active');
 filterType='all';
 document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
 document.querySelector('.filter-btn').classList.add('active');
+if(t!=='all') hideQFRows();
+pendingOnly=false;
+activeMetric='all';
 updateStatusDropdown();
 if(!silent)render();
 }
-function setSubTab(t,btn){subTab=t;currentPage=1;document.querySelectorAll('#sub-tabs .tab').forEach(b=>b.classList.remove('active'));btn.classList.add('active');render();}
+function setSubTab(t,btn){
+  subTab=t;currentPage=1;
+  document.querySelectorAll('#sub-tabs .tab').forEach(b=>b.classList.remove('active'));
+  ['all','SFA','Regular'].forEach(function(key){
+    var pill=document.getElementById('subtab-'+key);
+    if(!pill) return;
+    pill.classList.toggle('active', key===t);
+  });
+  render();
+  updateSubTabCounts();
+}
+
+function updateSubTabCounts(){
+  var wrapper=document.getElementById('sub-tabs-wrapper');
+  if(!wrapper||wrapper.style.display==='none') return;
+  ['all','SFA','Regular'].forEach(function(key){
+    var el=document.getElementById('subtab-count-'+key);
+    if(!el) return;
+    var count=projects.filter(function(p){
+      var matchTab=mainTab==='all'||(p.type===mainTab)||(mainTab==='COR'&&p.hasCor);
+      var matchSub=key==='all'||p.subtype===key;
+      var matchSearch=!searchQ||(p.name||'').toLowerCase().includes(searchQ.toLowerCase())||(p.pid||'').toLowerCase().includes(searchQ.toLowerCase());
+      return matchTab&&matchSub&&matchSearch;
+    }).length;
+    el.textContent=count;
+  });
+}
 function toggleStatusFilter(s){
 if(statusFilters.has(s))statusFilters.delete(s);
 else statusFilters.add(s);
@@ -1807,7 +1990,15 @@ activePills.innerHTML=[...statusFilters].map(s=>
 ).join('');
 }
 }
-function setFilter(f,btn){filterType=f;currentPage=1;document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');render();}
+function setFilter(f,btn){
+  filterType=f;
+  // Only reset pendingOnly if clicking All
+  if(f==='all') pendingOnly=false;
+  currentPage=1;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  render();
+}
 function setSearch(v){searchQ=v;currentPage=1;render();}
 function setSort(v){sortBy=v;currentPage=1;render();}
 function setPageSize(v){pageSize=parseInt(v);currentPage=1;render();}
@@ -1842,20 +2033,56 @@ list.push({id:'cl_'+p.id+'_'+(c.corType||'')+'_'+Math.random(),name:p.name,pid:p
 }
 });
 });
+// Apply assignee filter
+if(filterType==='joy') list=list.filter(c=>(c.assignee||'').toLowerCase().includes('joy'));
+if(filterType==='althesa') list=list.filter(c=>(c.assignee||'').toLowerCase().includes('althesa'));
+if(filterType==='rachel') list=list.filter(c=>(c.assignee||'').toLowerCase().includes('rachel'));
 if(searchQ){const q=searchQ.toLowerCase();list=list.filter(c=>(c.name||'').toLowerCase().includes(q)||(c.pid||'').toLowerCase().includes(q));}
 list.sort((a,b)=>(a.name||'').localeCompare(b.name||''));
 return{mode:'corrections',list};
 }
 let list=[...projects];
-if(mainTab!=='all')list=list.filter(p=>p.type===mainTab);
-if((mainTab==='IC'||mainTab==='COC')&&subTab!=='all')list=list.filter(p=>p.subtype===subTab);
-if(filterType==='corrections')list=list.filter(p=>needsAttention(p));
-if(filterType==='joy')list=list.filter(p=>(p.assignee||'').toLowerCase().includes('joy'));
-if(filterType==='althesa')list=list.filter(p=>(p.assignee||'').toLowerCase().includes('althesa'));
-if(filterType==='rachel')list=list.filter(p=>(p.assignee||'').toLowerCase().includes('rachel'));
-if(filterType==='hp45'){const _hp45paid=new Set(['sent for payment','ready for payment','payment processed']);list=list.filter(p=>p.hpEnrolled&&daysSince(p.hpEnrolled)>=45&&!_hp45paid.has((p.status||'').toLowerCase()));}
-if(statusFilters.size>0){const sf=new Set([...statusFilters].map(x=>x.toLowerCase()));list=list.filter(p=>sf.has((p.status||'').toLowerCase()));}
-if(searchQ){const q=searchQ.toLowerCase();list=list.filter(p=>p.name.toLowerCase().includes(q)||(p.pid||'').toLowerCase().includes(q)||(p.assignee||'').toLowerCase().includes(q)||(p.ubName||'').toLowerCase().includes(q));}
+
+// 1. Scope by tab
+if(mainTab!=='all') list=list.filter(p=>p.type===mainTab);
+
+// 2. Scope by SFA/Regular subtype
+if((mainTab==='IC'||mainTab==='COC')&&subTab!=='all') list=list.filter(p=>p.subtype===subTab);
+
+// 3. Pending filter (blacklist done statuses) — stacks with everything
+if(pendingOnly){
+  const DONE_F=mainTab==='Rebate'
+    ? new Set(['payment processed','ready for payment','sent for payment'])
+    : new Set(['approved','enrolled','payment processed','ready for payment','sent for payment']);
+  list=list.filter(p=>!DONE_F.has((p.status||'').toLowerCase()));
+}
+
+// 4. Assignee / type filters
+if(filterType==='corrections') list=list.filter(p=>needsAttention(p));
+if(filterType==='joy') list=list.filter(p=>(p.assignee||'').toLowerCase().includes('joy'));
+if(filterType==='althesa') list=list.filter(p=>(p.assignee||'').toLowerCase().includes('althesa'));
+if(filterType==='rachel') list=list.filter(p=>(p.assignee||'').toLowerCase().includes('rachel'));
+if(filterType==='hp45'){
+  const _hp45paid=new Set(['sent for payment','ready for payment','payment processed']);
+  list=list.filter(p=>p.hpEnrolled&&daysSince(p.hpEnrolled)>=45&&!_hp45paid.has((p.status||'').toLowerCase()));
+}
+
+// 5. Status dropdown filter
+if(statusFilters.size>0){
+  const sf=new Set([...statusFilters].map(x=>x.toLowerCase()));
+  list=list.filter(p=>sf.has((p.status||'').toLowerCase()));
+}
+
+// 6. Search
+if(searchQ){
+  const q=searchQ.toLowerCase();
+  list=list.filter(p=>
+    p.name.toLowerCase().includes(q)||
+    (p.pid||'').toLowerCase().includes(q)||
+    (p.assignee||'').toLowerCase().includes(q)||
+    (p.ubName||'').toLowerCase().includes(q)
+  );
+}
 list.sort((a,b)=>{
 if(sortBy==='cor_first'){const an=needsAttention(a)?0:1,bn=needsAttention(b)?0:1;if(an!==bn)return an-bn;return a.name.localeCompare(b.name);}
 if(sortBy==='name')return a.name.localeCompare(b.name);
@@ -1877,7 +2104,7 @@ const PENDING_STATUSES=['denied','manual review required','more information requ
 const totalPaid=allRebates.filter(p=>PAID_STATUSES.some(x=>(p.status||'').toLowerCase()===x)).reduce((s,p)=>s+(parseFloat(p.rebateAmount)||0),0);
 const totalPending=allRebates.filter(p=>PENDING_STATUSES.some(x=>(p.status||'').toLowerCase()===x)).reduce((s,p)=>s+(parseFloat(p.rebateAmount)||0),0);
 function fmt(n){return n>0?'$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'--';}
-let html='\x3cdiv style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:1rem">';
+let html='\x3cdiv style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px">';
 html+='\x3cdiv class="metric" style="border-left:3px solid var(--it)">\x3cdiv class="metric-label">Pending Rebate Payment\x3c/div>\x3cdiv class="metric-value mv-i" style="font-size:20px;font-weight:700">'+fmt(totalPending)+'\x3c/div>\x3cdiv style="font-size:10px;color:var(--text3);margin-top:2px">Denied · Manual Review · More Info · On Hold · Peer Review · Pending IC · Site Inspection · Withdrawn · In Auto Review · Submitted\x3c/div>\x3c/div>';
 html+='\x3cdiv class="metric" style="border-left:3px solid var(--st)">\x3cdiv class="metric-label">Payment Processed\x3c/div>\x3cdiv class="metric-value mv-s" style="font-size:20px;font-weight:700">'+fmt(totalPaid)+'\x3c/div>\x3cdiv style="font-size:10px;color:var(--text3);margin-top:2px">Payment Processed · Ready for Payment · Sent for Payment\x3c/div>\x3c/div>';
 html+='\x3c/div>';
@@ -1974,7 +2201,20 @@ if(el)el.classList.add('active');
 }
 function showQFRow(id){
 ['qf-pending-row','qf-nys-row'].forEach(r=>{const el=document.getElementById(r);if(el)el.style.display='none';});
-const el=document.getElementById(id);if(el)el.style.display='flex';
+const el=document.getElementById(id);if(!el)return;
+// Show only relevant buttons for current tab
+const icBtns=['qfb-pend-ic','qfb-nys-ic'];
+const cocBtns=['qfb-pend-coc','qfb-nys-coc'];
+const rebBtns=['qfb-pend-rebate','qfb-nys-rebate'];
+[...icBtns,...cocBtns,...rebBtns].forEach(b=>{
+  const btn=document.getElementById(b);if(!btn)return;
+  if(mainTab==='all') btn.style.display='';
+  else if(mainTab==='IC') btn.style.display=icBtns.includes(b)?'':'none';
+  else if(mainTab==='COC') btn.style.display=cocBtns.includes(b)?'':'none';
+  else if(mainTab==='Rebate') btn.style.display=rebBtns.includes(b)?'':'none';
+  else btn.style.display='none';
+});
+el.style.display='flex';
 }
 function hideQFRows(){
 ['qf-pending-row','qf-nys-row'].forEach(r=>{const el=document.getElementById(r);if(el)el.style.display='none';});
@@ -2001,11 +2241,27 @@ render();
 return;
 }
 if(type==='pending'){
+if(mainTab!=='all'){
+  hideQFRows();
+  pendingOnly=true;
+  filterType='all';
+  highlightMetric(type);
+  render();
+  return;
+}
 showQFRow('qf-pending-row');
 highlightMetric(type);
 return;
 }
 if(type==='nys'){
+if(mainTab!=='all'){
+  hideQFRows();
+  statusFilters=new Set(['Not yet Submitted']);
+  updateStatusPills();
+  highlightMetric(type);
+  render();
+  return;
+}
 showQFRow('qf-nys-row');
 highlightMetric(type);
 return;
@@ -2035,50 +2291,28 @@ document.querySelector('.filter-btn').classList.add('active');
 updateStatusPills();showQFRow('qf-nys-row');setActiveQFBtn('qfb-nys-rebate');highlightMetric('nys');render();return;
 }
 if(type==='pending-ic'){
-const btn=document.querySelector('#main-tabs .tab:nth-child(2)');
-setMainTab('IC',btn,true);
-filterType='all';
-statusFilters=new Set(IC_STATUSES.filter(s=>s.toLowerCase()!=='approved'));
-document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
-document.querySelector('.filter-btn').classList.add('active');
-updateStatusPills();
-setActiveQFBtn('qfb-pend-ic');
-highlightMetric('pending');
-render();
-return;
+hideQFRows();
+sidebarNav('IC',document.getElementById('sb-IC'));
+pendingOnly=true;filterType='all';statusFilters=new Set();
+updateStatusPills();setActiveQFBtn('qfb-pend-ic');highlightMetric('pending');render();return;
 }
 if(type==='pending-coc'){
-const btn=document.querySelector('#main-tabs .tab:nth-child(3)');
-setMainTab('COC',btn,true);
-filterType='all';
-statusFilters=new Set(COC_STATUSES.filter(s=>s.toLowerCase()!=='approved'));
-document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
-document.querySelector('.filter-btn').classList.add('active');
-updateStatusPills();
-setActiveQFBtn('qfb-pend-coc');
-highlightMetric('pending');
-render();
-return;
+hideQFRows();
+sidebarNav('COC',document.getElementById('sb-COC'));
+pendingOnly=true;filterType='all';statusFilters=new Set();
+updateStatusPills();setActiveQFBtn('qfb-pend-coc');highlightMetric('pending');render();return;
 }
 if(type==='pending-rebate'){
-const PAID=['Payment Processed','Ready For Payment','Sent for Payment'];
-const btn=document.querySelector('#main-tabs .tab:nth-child(4)');
-setMainTab('Rebate',btn,true);
-filterType='all';
-statusFilters=new Set(REBATE_STATUSES.filter(s=>!PAID.includes(s)));
-document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
-document.querySelector('.filter-btn').classList.add('active');
-updateStatusPills();
-setActiveQFBtn('qfb-pend-rebate');
-highlightMetric('pending');
-render();
-return;
+hideQFRows();
+sidebarNav('Rebate',document.getElementById('sb-Rebate'));
+pendingOnly=true;filterType='all';statusFilters=new Set();
+updateStatusPills();setActiveQFBtn('qfb-pend-rebate');highlightMetric('pending');render();return;
 }
 if(type==='hp45'){
 hideQFRows();
-const allBtn=document.querySelector('#main-tabs .tab:nth-child(1)');
-setMainTab('all',allBtn,true);
+// Stay on current tab — just apply the hp45 filter
 filterType='hp45';
+pendingOnly=false;
 document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
 const hp45btn=document.getElementById('hp45-filter-btn');
 if(hp45btn)hp45btn.classList.add('active');
@@ -2091,6 +2325,7 @@ return;
 const allBtn=document.querySelector('#main-tabs .tab:nth-child(1)');
 setMainTab('all',allBtn,true);
 hideQFRows();
+pendingOnly=false;
 if(type==='corrections'){
 filterType='corrections';
 statusFilters=new Set();
@@ -2121,58 +2356,100 @@ if(idx!==undefined&&cards[idx])cards[idx].classList.add('active');
 function updateMetrics(){
 const{list}=getList();
 const set=(id,val)=>{const el=document.getElementById(id);if(el)el.textContent=val;};
-set('m-total',list.length);
-const attAll=projects.filter(needsAttention).length;
-const totalIC=projects.filter(p=>p.type==='IC').length;
-const totalCOC=projects.filter(p=>p.type==='COC').length;
-const totalRebate=projects.filter(p=>p.type==='Rebate').length;
+const show=(id)=>{const el=document.getElementById(id);if(el)el.style.display='';};
+const hide=(id)=>{const el=document.getElementById(id);if(el)el.style.display='none';};
+
 const PAID_REBATE=new Set(['payment processed','ready for payment','sent for payment']);
-const pendingIC=projects.filter(p=>p.type==='IC'&&!DONE_STATUSES.has((p.status||'').toLowerCase())).length;
-const pendingCOC=projects.filter(p=>p.type==='COC'&&!DONE_STATUSES.has((p.status||'').toLowerCase())).length;
-const pendingRebate=projects.filter(p=>p.type==='Rebate'&&!PAID_REBATE.has((p.status||'').toLowerCase())).length;
-const nys=list.filter(p=>(p.status||'').toLowerCase()==='not yet submitted').length;
 const RESOLVED_S=['approved','payment processed','sent for payment','ready for payment','enrolled'];
-// Count from standalone corrections
-const _openStandalone=corrections.filter(c=>{
-if(c.status==='Resolved')return false;
-if(c.linkedProjectId){
-const p=projects.find(x=>x.id===parseInt(c.linkedProjectId));
-if(!p)return false;
-if(RESOLVED_S.some(s=>(p.status||'').toLowerCase()===s))return false;
-}
-return true;
-});
-// Also count corList-only corrections not in standalone
-const _openCorList=[];
-projects.forEach(p=>{
-if(!p.corList||RESOLVED_S.some(s=>(p.status||'').toLowerCase()===s))return;
-p.corList.forEach(c=>{
-if(c.status==='Resolved')return;
-const already=_openStandalone.some(x=>parseInt(x.linkedProjectId)===p.id&&(x.corNotes||'').trim()===(c.corNotes||'').trim()&&(x.corType||'')===(c.corType||''));
-if(!already)_openCorList.push(c);
-});
-});
-const openCorsAll=[..._openStandalone,..._openCorList].filter(c=>{
-if(c.status==='Resolved')return false;
-if(c.linkedProjectId){
-const p=projects.find(x=>x.id===parseInt(c.linkedProjectId));
-if(!p)return false;
-if(RESOLVED_S.some(s=>(p.status||'').toLowerCase()===s))return false;
-}
-return true;
-}).length;
-set('m-att',attAll);
-set('m-pending-all',pendingIC+pendingCOC+pendingRebate);
-set('m-nys',nys);
-set('m-cor',openCorsAll);
 const HP45_PAID=new Set(['sent for payment','ready for payment','payment processed']);
-const hp45Count=projects.filter(p=>p.hpEnrolled&&daysSince(p.hpEnrolled)>=45&&!HP45_PAID.has((p.status||'').toLowerCase())).length;
-set('m-hp45',hp45Count);
-const nysIC=projects.filter(p=>p.type==='IC'&&(p.status||'').toLowerCase()==='not yet submitted').length;
-const nysCOC=projects.filter(p=>p.type==='COC'&&(p.status||'').toLowerCase()==='not yet submitted').length;
-const nysRebate=projects.filter(p=>p.type==='Rebate'&&(p.status||'').toLowerCase()==='not yet submitted').length;
-set('qf-nys-ic',nysIC);set('qf-nys-coc',nysCOC);set('qf-nys-rebate',nysRebate);
-set('qf-pend-ic',pendingIC);set('qf-pend-coc',pendingCOC);set('qf-pend-rebate',pendingRebate);
+
+// Showing count always = current filtered list
+set('m-total', list.length);
+
+// Open Corrections count — scoped to current tab + assignee filter
+function countOpenCors(typeFilter, assignee){
+  // typeFilter: null = all, 'IC'/'COC'/'Rebate' = scoped
+  // assignee: null = all, 'joy'/'althesa'/'rachel' = scoped
+  const matchAssignee=(a)=>{
+    if(!assignee)return true;
+    return (a||'').toLowerCase().includes(assignee);
+  };
+  const standalone=corrections.filter(c=>{
+    if(c.status==='Resolved')return false;
+    if(c.linkedProjectId){
+      const p=projects.find(x=>x.id===parseInt(c.linkedProjectId));
+      if(!p)return false;
+      if(RESOLVED_S.some(s=>(p.status||'').toLowerCase()===s))return false;
+      if(typeFilter&&p.type!==typeFilter)return false;
+      if(!matchAssignee(p.assignee))return false;
+    } else {
+      if(typeFilter)return false;
+      if(!matchAssignee(c.assignee))return false;
+    }
+    return true;
+  });
+  const corList=[];
+  projects.forEach(p=>{
+    if(typeFilter&&p.type!==typeFilter)return;
+    if(!matchAssignee(p.assignee))return;
+    if(!p.corList||RESOLVED_S.some(s=>(p.status||'').toLowerCase()===s))return;
+    p.corList.forEach(c=>{
+      if(c.status==='Resolved')return;
+      const already=standalone.some(x=>parseInt(x.linkedProjectId)===p.id&&(x.corNotes||'').trim()===(c.corNotes||'').trim()&&(x.corType||'')===(c.corType||''));
+      if(!already)corList.push(c);
+    });
+  });
+  return standalone.length+corList.length;
+}
+const _tabForCor=(mainTab==='all'||mainTab==='COR')?null:mainTab;
+const _assigneeForCor=(mainTab==='COR'&&['joy','althesa','rachel'].includes(filterType))?filterType:null;
+set('m-cor', countOpenCors(_tabForCor, _assigneeForCor));
+
+// Projects scoped to current tab
+const scoped = mainTab==='all'||mainTab==='COR' ? projects : projects.filter(p=>p.type===mainTab);
+
+if(mainTab==='COR'){
+  // Corrections tab: only show Showing + Open Corrections
+  hide('mc-pending'); hide('mc-nys'); hide('mc-hp45');
+  show('mc-cor');
+} else if(mainTab==='Rebate'){
+  // Rebate tab: Pending + NYS + Corrections + HP45
+  show('mc-pending'); show('mc-nys'); show('mc-cor'); show('mc-hp45');
+  set('mc-pending-label','Rebate Pending');
+  const pendingCount=scoped.filter(p=>!PAID_REBATE.has((p.status||'').toLowerCase())).length;
+  set('m-pending-all', pendingCount);
+  set('m-nys', scoped.filter(p=>(p.status||'').toLowerCase()==='not yet submitted').length);
+  set('m-hp45', scoped.filter(p=>p.hpEnrolled&&daysSince(p.hpEnrolled)>=45&&!PAID_REBATE.has((p.status||'').toLowerCase())).length);
+} else if(mainTab==='IC'){
+  show('mc-pending'); show('mc-nys'); show('mc-cor'); show('mc-hp45');
+  set('mc-pending-label','IC Pending');
+  const pendingCount=scoped.filter(p=>!RESOLVED_S.some(s=>(p.status||'').toLowerCase()===s)).length;
+  set('m-pending-all', pendingCount);
+  set('m-nys', scoped.filter(p=>(p.status||'').toLowerCase()==='not yet submitted').length);
+  set('m-hp45', scoped.filter(p=>p.hpEnrolled&&daysSince(p.hpEnrolled)>=45&&!HP45_PAID.has((p.status||'').toLowerCase())).length);
+} else if(mainTab==='COC'){
+  show('mc-pending'); show('mc-nys'); show('mc-cor'); show('mc-hp45');
+  set('mc-pending-label','COC Pending');
+  const pendingCount=scoped.filter(p=>!RESOLVED_S.some(s=>(p.status||'').toLowerCase()===s)).length;
+  set('m-pending-all', pendingCount);
+  set('m-nys', scoped.filter(p=>(p.status||'').toLowerCase()==='not yet submitted').length);
+  set('m-hp45', scoped.filter(p=>p.hpEnrolled&&daysSince(p.hpEnrolled)>=45&&!HP45_PAID.has((p.status||'').toLowerCase())).length);
+} else {
+  // All Projects
+  show('mc-pending'); show('mc-nys'); show('mc-cor'); show('mc-hp45');
+  set('mc-pending-label','Overall Pending');
+  const pendingIC=projects.filter(p=>p.type==='IC'&&!RESOLVED_S.some(s=>(p.status||'').toLowerCase()===s)).length;
+  const pendingCOC=projects.filter(p=>p.type==='COC'&&!RESOLVED_S.some(s=>(p.status||'').toLowerCase()===s)).length;
+  const pendingRebate=projects.filter(p=>p.type==='Rebate'&&!PAID_REBATE.has((p.status||'').toLowerCase())).length;
+  set('m-pending-all', pendingIC+pendingCOC+pendingRebate);
+  set('m-nys', list.filter(p=>(p.status||'').toLowerCase()==='not yet submitted').length);
+  set('m-hp45', projects.filter(p=>p.hpEnrolled&&daysSince(p.hpEnrolled)>=45&&!HP45_PAID.has((p.status||'').toLowerCase())).length);
+  set('qf-pend-ic',pendingIC); set('qf-pend-coc',pendingCOC); set('qf-pend-rebate',pendingRebate);
+  const nysIC=projects.filter(p=>p.type==='IC'&&(p.status||'').toLowerCase()==='not yet submitted').length;
+  const nysCOC=projects.filter(p=>p.type==='COC'&&(p.status||'').toLowerCase()==='not yet submitted').length;
+  const nysRebate=projects.filter(p=>p.type==='Rebate'&&(p.status||'').toLowerCase()==='not yet submitted').length;
+  set('qf-nys-ic',nysIC); set('qf-nys-coc',nysCOC); set('qf-nys-rebate',nysRebate);
+}
 }
 function renderAlerts(){
 const el=document.getElementById('alerts');
@@ -3211,11 +3488,11 @@ const val=document.getElementById('pin-input').value;
 if(val===OWNER_PIN){
 pinUnlocked=true;
 const btn=document.getElementById('viewer-btn');
-btn.classList.add('clickable');
-btn.title='Click to see who is viewing';
+if(btn){btn.classList.add('clickable');btn.title='Click to see who is viewing';}
 document.getElementById('pin-input').value='';
 document.getElementById('pin-error').style.display='none';
 closePinModal();
+applyEditMode();
 render();
 showViewerList();
 }else{
@@ -3573,6 +3850,115 @@ showToast('Exported successfully!');
 }
 load();updateStatusDropdown();render();applyEditMode();
 
+// ─── SIDEBAR NAV ──────────────────────────────────────────────────────────────
+function sidebarNav(tab, btn){
+  // Deactivate all sidebar items
+  document.querySelectorAll('.sb-nav-item').forEach(function(b){b.classList.remove('active');});
+  if(btn) btn.classList.add('active');
+  // Update page title
+  var titles={all:'All Projects',IC:'Interconnection',COC:'COC',Rebate:'Rebate',COR:'Corrections'};
+  var titleEl=document.getElementById('main-page-title');
+  if(titleEl) titleEl.textContent=titles[tab]||'All Projects';
+  // Call existing setMainTab logic
+  setMainTab(tab, null);
+  // Show/hide sub-tabs wrapper
+  var wrapper=document.getElementById('sub-tabs-wrapper');
+  if(wrapper){
+    var subTabs=document.getElementById('sub-tabs');
+    var show=(subTabs&&subTabs.classList.contains('visible'));
+    wrapper.style.display=show?'block':'none';
+    if(show) setTimeout(updateSubTabCounts,50);
+  }
+}
+
+// Keep sidebar in sync when setMainTab is called from elsewhere (metric cards etc)
+var _origSetMainTabSidebar=setMainTab;
+setMainTab=function(t,btn,silent){
+  _origSetMainTabSidebar(t,btn,silent);
+  // Sync sidebar highlight
+  var map={all:'sb-all',IC:'sb-IC',COC:'sb-COC',Rebate:'sb-Rebate',COR:'sb-COR'};
+  if(map[t]){
+    document.querySelectorAll('.sb-nav-item').forEach(function(b){b.classList.remove('active');});
+    var sbBtn=document.getElementById(map[t]);
+    if(sbBtn) sbBtn.classList.add('active');
+    var titles={all:'All Projects',IC:'Interconnection',COC:'COC',Rebate:'Rebate',COR:'Corrections'};
+    var titleEl=document.getElementById('main-page-title');
+    if(titleEl) titleEl.textContent=titles[t]||'All Projects';
+  }
+  // Update corrections badge
+  updateSidebarCorBadge();
+};
+
+function updateSidebarCorBadge(){
+  var badge=document.getElementById('sb-cor-badge');
+  if(!badge) return;
+  const RESOLVED_S=['approved','payment processed','sent for payment','ready for payment','enrolled'];
+  // Count standalone corrections (not resolved, project not done)
+  var seen=[];
+  var corCount=0;
+  corrections.forEach(function(c){
+    if(c.status==='Resolved') return;
+    if(c.linkedProjectId){
+      var p=projects.find(function(x){return x.id===parseInt(c.linkedProjectId);});
+      if(!p) return;
+      if(RESOLVED_S.some(function(s){return (p.status||'').toLowerCase()===s;})) return;
+    }
+    seen.push((c.corNotes||'').trim()+'|'+(c.corType||'')+'|'+c.linkedProjectId);
+    corCount++;
+  });
+  // Count corList entries not already counted
+  projects.forEach(function(p){
+    if(!p.corList||!p.corList.length) return;
+    if(RESOLVED_S.some(function(s){return (p.status||'').toLowerCase()===s;})) return;
+    p.corList.forEach(function(c){
+      if(c.status==='Resolved') return;
+      var key=(c.corNotes||'').trim()+'|'+(c.corType||'')+'|'+p.id;
+      if(seen.indexOf(key)===-1) corCount++;
+    });
+  });
+  if(corCount>0){badge.textContent=corCount;badge.style.display='inline';}
+  else{badge.style.display='none';}
+}
+
+function updateSidebarCounts(){
+  var countAll=projects.length;
+  var countIC=projects.filter(function(p){return p.type==='IC';}).length;
+  var countCOC=projects.filter(function(p){return p.type==='COC';}).length;
+  var countRebate=projects.filter(function(p){return p.type==='Rebate';}).length;
+  var set=function(id,val){var el=document.getElementById(id);if(el)el.textContent=val;};
+  set('sb-count-all',countAll);
+  set('sb-count-IC',countIC);
+  set('sb-count-COC',countCOC);
+  set('sb-count-Rebate',countRebate);
+}
+
+// Patch updateMetrics to also update sidebar badge
+var _origUpdateMetricsSidebar=updateMetrics;
+updateMetrics=function(){
+  _origUpdateMetricsSidebar();
+  updateSidebarCorBadge();
+  updateSidebarCounts();
+  updateSubTabCounts();
+};
+
+// Wire sidebar viewer box to same handler as viewer button
+function updateSidebarViewerBox(){
+  var sub=document.getElementById('sb-viewer-sub');
+  var countEl=document.getElementById('sb-viewer-count');
+  // Mirror viewer-count
+  var mainCount=document.getElementById('viewer-count');
+  if(mainCount&&countEl) countEl.textContent=mainCount.textContent;
+  // Show current viewer name
+  if(sub&&myViewerName) sub.textContent=myViewerName+' is viewing';
+}
+// Call after login
+var _origOnLoginDoneSidebar=window._onLoginDone;
+window._onLoginDone=function(name){
+  if(_origOnLoginDoneSidebar) _origOnLoginDoneSidebar(name);
+  setTimeout(updateSidebarViewerBox,500);
+};
+setTimeout(updateSidebarViewerBox,1000);
+
 // ─── CORRECTION NOTIFICATION SYSTEM ────────────────────────────────────────
 // Fires browser notifications at 9:00 AM and 4:30 PM CST for unresolved corrections
 // Only notifies the logged-in user about their own corrections
@@ -3724,5 +4110,39 @@ window._onLoginDone=function(name){
 
 
 </script>
+<!-- Name Prompt Modal -->
+<div class="modal-bg" id="name-prompt-modal" style="display:flex">
+<div class="name-prompt-modal">
+  <h2>Welcome to Utility Department Tracker</h2>
+  <p>Enter your full name to continue.</p>
+  <input type="text" id="viewer-name-input" placeholder="Full name..." maxlength="60" autocomplete="name" oninput="checkTeamName(this.value)" onkeydown="if(event.key==='Enter')submitViewerName()">
+  <div id="team-pw-section" style="display:none">
+    <div style="font-size:12px;color:var(--it);margin-bottom:6px;text-align:center">&#128075; Welcome! Enter the team password to enable editing.</div>
+    <input type="password" id="team-password-input" placeholder="Team password" maxlength="40" style="width:100%;font-size:14px;padding:9px 12px;border-radius:var(--r);border:0.5px solid var(--border2);background:var(--bg);color:var(--text);outline:none;text-align:center;box-sizing:border-box;margin-bottom:12px" onkeydown="if(event.key==='Enter')submitViewerName()">
+  </div>
+  <div id="name-prompt-error" style="font-size:12px;color:var(--dt);margin-bottom:8px;display:none">Please enter your full name.</div>
+  <button class="btn-s" style="width:100%;font-size:14px" onclick="submitViewerName()">Continue</button>
+  <div style="font-size:11px;color:var(--text3);margin-top:10px">View only mode if no team password entered</div>
+</div>
+</div>
+
+<!-- PIN Modal -->
+<div class="modal-bg" id="pin-modal" style="display:none" onclick="if(event.target.id==='pin-modal')closePinModal()">
+<div class="pin-modal">
+  <div class="modal-hdr"><h2>Owner access</h2><button class="close-btn" onclick="closePinModal()">&#x2715;</button></div>
+  <div class="fr"><label>Enter PIN</label><input type="password" id="pin-input" maxlength="10" placeholder="PIN..." onkeydown="if(event.key==='Enter')checkPin()"></div>
+  <div id="pin-error" style="font-size:12px;color:var(--dt);margin-bottom:10px;display:none">Incorrect PIN. Try again.</div>
+  <div class="modal-actions"><button class="btn-c" onclick="closePinModal()">Cancel</button><button class="btn-s" onclick="checkPin()">Unlock</button></div>
+</div>
+</div>
+
+<!-- Viewer List Modal -->
+<div class="modal-bg" id="viewer-list-modal" style="display:none" onclick="if(event.target.id==='viewer-list-modal')closeViewerList()">
+<div class="viewer-list-modal">
+  <div class="modal-hdr"><h2>Currently viewing</h2><button class="close-btn" onclick="closeViewerList()">&#x2715;</button></div>
+  <div id="viewer-list-content"></div>
+</div>
+</div>
+
 </body>
 </html>
