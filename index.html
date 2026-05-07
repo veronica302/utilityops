@@ -2042,7 +2042,7 @@ if(filterType==='althesa') list=list.filter(p=>(p.assignee||'').toLowerCase().in
 if(filterType==='rachel') list=list.filter(p=>(p.assignee||'').toLowerCase().includes('rachel'));
 if(filterType==='hp45'){
   const _hp45paid=new Set(['sent for payment','ready for payment','payment processed']);
-  list=list.filter(p=>p.hpEnrolled&&daysSince(p.hpEnrolled)>=45&&!_hp45paid.has((p.status||'').toLowerCase()));
+  list=list.filter(p=>p.type==='Rebate'&&p.hpEnrolled&&daysSince(p.hpEnrolled)>=45&&!_hp45paid.has((p.status||'').toLowerCase()));
 }
 
 // 5. Status dropdown filter
@@ -2404,14 +2404,14 @@ if(mainTab==='COR'){
   const pendingCount=scoped.filter(p=>!RESOLVED_S.some(s=>(p.status||'').toLowerCase()===s)).length;
   set('m-pending-all', pendingCount);
   set('m-nys', scoped.filter(p=>(p.status||'').toLowerCase()==='not yet submitted').length);
-  set('m-hp45', scoped.filter(p=>p.hpEnrolled&&daysSince(p.hpEnrolled)>=45&&!HP45_PAID.has((p.status||'').toLowerCase())).length);
+  set('m-hp45', scoped.filter(p=>p.type==='Rebate'&&p.hpEnrolled&&daysSince(p.hpEnrolled)>=45&&!HP45_PAID.has((p.status||'').toLowerCase())).length);
 } else if(mainTab==='COC'){
   show('mc-pending'); show('mc-nys'); show('mc-cor'); show('mc-hp45');
   set('mc-pending-label','COC Pending');
   const pendingCount=scoped.filter(p=>!RESOLVED_S.some(s=>(p.status||'').toLowerCase()===s)).length;
   set('m-pending-all', pendingCount);
   set('m-nys', scoped.filter(p=>(p.status||'').toLowerCase()==='not yet submitted').length);
-  set('m-hp45', scoped.filter(p=>p.hpEnrolled&&daysSince(p.hpEnrolled)>=45&&!HP45_PAID.has((p.status||'').toLowerCase())).length);
+  set('m-hp45', scoped.filter(p=>p.type==='Rebate'&&p.hpEnrolled&&daysSince(p.hpEnrolled)>=45&&!HP45_PAID.has((p.status||'').toLowerCase())).length);
 } else {
   // All Projects
   show('mc-pending'); show('mc-nys'); show('mc-cor'); show('mc-hp45');
@@ -2421,7 +2421,7 @@ if(mainTab==='COR'){
   const pendingRebate=projects.filter(p=>p.type==='Rebate'&&!PAID_REBATE.has((p.status||'').toLowerCase())).length;
   set('m-pending-all', pendingIC+pendingCOC+pendingRebate);
   set('m-nys', list.filter(p=>(p.status||'').toLowerCase()==='not yet submitted').length);
-  set('m-hp45', projects.filter(p=>p.hpEnrolled&&daysSince(p.hpEnrolled)>=45&&!HP45_PAID.has((p.status||'').toLowerCase())).length);
+  set('m-hp45', projects.filter(p=>p.type==='Rebate'&&p.hpEnrolled&&daysSince(p.hpEnrolled)>=45&&!HP45_PAID.has((p.status||'').toLowerCase())).length);
   set('qf-pend-ic',pendingIC); set('qf-pend-coc',pendingCOC); set('qf-pend-rebate',pendingRebate);
   const nysIC=projects.filter(p=>p.type==='IC'&&(p.status||'').toLowerCase()==='not yet submitted').length;
   const nysCOC=projects.filter(p=>p.type==='COC'&&(p.status||'').toLowerCase()==='not yet submitted').length;
@@ -3609,7 +3609,7 @@ function renderHP45Report(){
 const threshold=parseInt(document.getElementById('hp45-rpt-threshold')?.value||'45');
 const assigneeFilter=document.getElementById('hp45-rpt-assignee')?.value||'all';
 const HP45_EXCLUDE=new Set(['sent for payment','ready for payment','payment processed']);
-let list=projects.filter(p=>p.hpEnrolled&&daysSince(p.hpEnrolled)>=threshold&&!HP45_EXCLUDE.has((p.status||'').toLowerCase()));
+let list=projects.filter(p=>p.type==='Rebate'&&p.hpEnrolled&&daysSince(p.hpEnrolled)>=threshold&&!HP45_EXCLUDE.has((p.status||'').toLowerCase()));
 if(assigneeFilter!=='all')list=list.filter(p=>(p.assignee||'').toLowerCase().includes(assigneeFilter.toLowerCase()));
 list.sort((a,b)=>{const da=daysSince(a.hpEnrolled),db=daysSince(b.hpEnrolled);return(db||0)-(da||0);});
 const countEl=document.getElementById('hp45-rpt-count');
@@ -3643,7 +3643,7 @@ function exportHP45XLS(){
 const threshold=parseInt(document.getElementById('hp45-rpt-threshold')?.value||'45');
 const assigneeFilter=document.getElementById('hp45-rpt-assignee')?.value||'all';
 const HP45_EXCLUDE=new Set(['sent for payment','ready for payment','payment processed']);
-let list=projects.filter(p=>p.hpEnrolled&&daysSince(p.hpEnrolled)>=threshold&&!HP45_EXCLUDE.has((p.status||'').toLowerCase()));
+let list=projects.filter(p=>p.type==='Rebate'&&p.hpEnrolled&&daysSince(p.hpEnrolled)>=threshold&&!HP45_EXCLUDE.has((p.status||'').toLowerCase()));
 if(assigneeFilter!=='all')list=list.filter(p=>(p.assignee||'').toLowerCase().includes(assigneeFilter.toLowerCase()));
 list.sort((a,b)=>(daysSince(b.hpEnrolled)||0)-(daysSince(a.hpEnrolled)||0));
 if(!list.length){showToast('No projects to export.');return;}
