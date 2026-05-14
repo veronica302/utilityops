@@ -3395,7 +3395,10 @@ function updateViewerCount(){
 const now=Date.now();
 const active=getViewers().filter(v=>STALE_MS>now-v.ts);
 const count=active.length;
-document.getElementById('viewer-count').textContent=count;
+const el=document.getElementById('viewer-count');
+if(el)el.textContent=count;
+const sbEl=document.getElementById('sb-viewer-count');
+if(sbEl)sbEl.textContent=count;
 }
 function startHeartbeat(){
 if(heartbeatTimer)clearInterval(heartbeatTimer);
@@ -3924,8 +3927,7 @@ function updateSidebarViewerBox(){
   var sub=document.getElementById('sb-viewer-sub');
   var countEl=document.getElementById('sb-viewer-count');
   // Mirror viewer-count
-  var mainCount=document.getElementById('viewer-count');
-  if(mainCount&&countEl) countEl.textContent=mainCount.textContent;
+  // sb-viewer-count is updated directly by updateViewerCount()
   // Show current viewer name
   if(sub&&myViewerName) sub.textContent=myViewerName+' is viewing';
 }
