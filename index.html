@@ -2078,12 +2078,12 @@ if(mainTab==='Rebate'||mainTab==='all'){
 const allRebates=projects.filter(p=>p.type==='Rebate');
 const newToProcess=allRebates.filter(p=>(p.status||'').toLowerCase()==='not yet submitted');
 const PAID_STATUSES=['payment processed','ready for payment','sent for payment'];
-const PENDING_STATUSES=['denied','manual review required','more information required','on hold','peer review','pending interconnection','site inspection','withdrawn','in automated review','submitted'];
+const PENDING_STATUSES=['denied','manual review required','more information required','on hold','peer review','pending interconnection','site inspection','withdrawn','in automated review','submitted','not yet submitted'];
 const totalPaid=allRebates.filter(p=>PAID_STATUSES.some(x=>(p.status||'').toLowerCase()===x)).reduce((s,p)=>s+(parseFloat(p.rebateAmount)||0),0);
 const totalPending=allRebates.filter(p=>PENDING_STATUSES.some(x=>(p.status||'').toLowerCase()===x)).reduce((s,p)=>s+(parseFloat(p.rebateAmount)||0),0);
 function fmt(n){return n>0?'$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'--';}
 let html='\x3cdiv style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px">';
-html+='\x3cdiv class="metric" style="border-left:3px solid var(--it)">\x3cdiv class="metric-label">Pending Rebate Payment\x3c/div>\x3cdiv class="metric-value mv-i" style="font-size:20px;font-weight:700">'+fmt(totalPending)+'\x3c/div>\x3cdiv style="font-size:10px;color:var(--text3);margin-top:2px">Denied · Manual Review · More Info · On Hold · Peer Review · Pending IC · Site Inspection · Withdrawn · In Auto Review · Submitted\x3c/div>\x3c/div>';
+html+='\x3cdiv class="metric" style="border-left:3px solid var(--it)">\x3cdiv class="metric-label">Pending Rebate Payment\x3c/div>\x3cdiv class="metric-value mv-i" style="font-size:20px;font-weight:700">'+fmt(totalPending)+'\x3c/div>\x3cdiv style="font-size:10px;color:var(--text3);margin-top:2px">Denied · Manual Review · More Info · On Hold · Peer Review · Pending IC · Site Inspection · Withdrawn · In Auto Review · Submitted · Not Yet Submitted\x3c/div>\x3c/div>';
 html+='\x3cdiv class="metric" style="border-left:3px solid var(--st)">\x3cdiv class="metric-label">Payment Processed\x3c/div>\x3cdiv class="metric-value mv-s" style="font-size:20px;font-weight:700">'+fmt(totalPaid)+'\x3c/div>\x3cdiv style="font-size:10px;color:var(--text3);margin-top:2px">Payment Processed · Ready for Payment · Sent for Payment\x3c/div>\x3c/div>';
 html+='\x3c/div>';
 banner.style.display='block';
